@@ -27,5 +27,6 @@ import java.util.Random;
 public class WorkerState {
   public Ray ray;
   public Vector4 attenuation = new Vector4();
+  public CorrelatedMultiJitter jitter;
   public Random random;
 }

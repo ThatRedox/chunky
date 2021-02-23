@@ -119,7 +119,7 @@ public class RenderManager extends AbstractRenderManager implements Renderer {
       long seed = System.currentTimeMillis();
       workers = new Thread[numThreads];
       for (int i = 0; i < numThreads; ++i) {
-        workers[i] = workerFactory.buildWorker(this, i, seed + i);
+        workers[i] = workerFactory.buildWorker(this, i, seed);
         workers[i].start();
       }
 

@@ -270,11 +270,19 @@ public class Ray {
    * Set this ray to a random diffuse reflection of the input ray.
    */
   public final void diffuseReflection(Ray ray, Random random) {
+    Vector2 xy = new Vector2(random.nextDouble(), random.nextDouble());
+    this.diffuseReflection(ray, xy);
+  }
+
+  /**
+   * Set this ray to a specified diffuse reflection of the input ray.
+   */
+  public final void diffuseReflection(Ray ray, Vector2 disk) {
     set(ray);
 
     // get random point on unit disk
-    double x1 = random.nextDouble();
-    double x2 = random.nextDouble();
+    double x1 = disk.x;
+    double x2 = disk.y;
     double r = FastMath.sqrt(x1);
     double theta = 2 * Math.PI * x2;
 

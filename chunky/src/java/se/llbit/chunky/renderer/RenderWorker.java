@@ -16,12 +16,14 @@
  */
 package se.llbit.chunky.renderer;
 
+import org.apache.commons.math3.util.FastMath;
 import se.llbit.chunky.renderer.scene.Camera;
 import se.llbit.chunky.renderer.scene.RayTracer;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.log.Log;
 import se.llbit.math.QuickMath;
 import se.llbit.math.Ray;
+import se.llbit.math.Vector2;
 
 import java.util.Random;
 
@@ -44,6 +46,8 @@ public class RenderWorker extends Thread {
   protected final RayTracer previewRayTracer;
   protected final RayTracer rayTracer;
 
+  protected int seed;
+
   /**
    * Create a new render worker, slave to a given render manager.
    *
@@ -61,6 +65,8 @@ public class RenderWorker extends Thread {
     state = new WorkerState();
     state.random = new Random(seed);
     state.ray = new Ray();
+
+    this.seed = state.random.nextInt();
   }
 
   @Override
@@ -112,6 +118,7 @@ public class RenderWorker extends Thread {
     final Camera cam = scene.camera();
 
     if (scene.getMode() != RenderMode.PREVIEW) {
+      Vector2 xy = new Vector2();
       for (int y = tile.y0; y < tile.y1; ++y) {
         int offset = y * width * 3 + tile.x0 * 3;
         for (int x = tile.x0; x < tile.x1; ++x) {
@@ -120,12 +127,16 @@ public class RenderWorker extends Thread {
           double sg = 0;
           double sb = 0;
 
-          for (int i = 0; i < manager.sppPerPass; ++i) {
-            double oy = random.nextDouble();
-            double ox = random.nextDouble();
+          CorrelatedMultiJitter jitter = new CorrelatedMultiJitter(x, y, width, height, seed, 0, scene.getTargetSpp());
+          state.jitter = jitter;
 
-            cam.calcViewRay(ray, random, (-halfWidth + (x + ox) * invHeight),
-                (-.5 + (y + oy) * invHeight));
+          for (int i = 0; i < manager.sppPerPass; ++i) {
+            xy.set(x, y);
+            jitter.setSpp(scene.spp + i);
+            jitter.jitter2D(xy, -1);
+
+            cam.calcViewRay(ray, random, (-halfWidth + xy.x * invHeight),
+                (-.5 + xy.y * invHeight));
 
             scene.rayTrace(rayTracer, state);
 
