@@ -30,6 +30,9 @@ import java.util.*;
 import static se.llbit.math.BVH.SPLIT_LIMIT;
 
 public class SahMaBVH extends BinaryBVH {
+    /** The threshold size to use a parallel sort. */
+    public final static int PARALLEL_SORT_THRESHOLD = 1<<10;
+
     public static void initImplementation() {
         BVH.factories.put("SAH_MA", new BVH.ImplementationFactory() {
             @Override
@@ -86,6 +89,9 @@ public class SahMaBVH extends BinaryBVH {
         return FastMath.max(depth1, depth2)+1;
     }
 
+    /**
+     * Calculate the best split point using the Surface Area Heuristics along the major axis.
+     */
     private int splitSAH_MA(Primitive[] primitives, AABB bb, int start, int end) {
         double xl = bb.xmax - bb.xmin;
         double yl = bb.ymax - bb.ymin;
@@ -106,7 +112,11 @@ public class SahMaBVH extends BinaryBVH {
         double[] sl = new double[end-start];
         double[] sr = new double[end-start];
 
-        Chunky.getCommonThreads().submit(() -> Arrays.parallelSort(primitives, start, end, cmp)).join();
+        if (end - start > PARALLEL_SORT_THRESHOLD) {
+            Chunky.getCommonThreads().submit(() -> Arrays.parallelSort(primitives, start, end, cmp)).join();
+        } else {
+            Arrays.sort(primitives, start, end, cmp);
+        }
         for (int i = 0; i < sl.length; ++i) {
             bounds.expand(primitives[start+i].bounds());
             sl[i] = bounds.surfaceArea();

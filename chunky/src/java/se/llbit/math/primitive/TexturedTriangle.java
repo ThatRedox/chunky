@@ -16,6 +16,7 @@
  */
 package se.llbit.math.primitive;
 
+import org.apache.commons.math3.util.FastMath;
 import se.llbit.chunky.world.Material;
 import se.llbit.math.AABB;
 import se.llbit.math.Ray;
@@ -242,8 +243,17 @@ public class TexturedTriangle implements Primitive {
 
     @Override
     public AABB bounds() {
-      return (new TexturedTriangle(new Vector3(c1x, c1y, c1z), new Vector3(c2x, c2y, c2z), new Vector3(c3x, c3y, c3z),
-              new Vector2(t1x, t1y), new Vector2(t2x, t2y), new Vector2(t3x, t3y), material)).bounds();
+      return new AABB(min3(c1x, c2x, c3x), max3(c1x, c2x, c3x),
+                      min3(c1y, c2y, c3y), max3(c1y, c2y, c3y),
+                      min3(c1z, c2z, c3z), max3(c1z, c2z, c3z));
+    }
+
+    private static float max3(float a, float b, float c) {
+      return FastMath.max(a, FastMath.max(b, c));
+    }
+
+    private static float min3(float a, float b, float c) {
+      return FastMath.min(a, FastMath.min(b, c));
     }
   }
 }
