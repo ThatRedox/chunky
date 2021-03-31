@@ -129,4 +129,121 @@ public class TexturedTriangle implements Primitive {
     return bounds;
   }
 
+  @Override
+  public Primitive pack() {
+    Vector3 c2 = new Vector3(e1);
+    c2.add(o);
+    Vector3 c3 = new Vector3(e2);
+    c3.add(o);
+
+    return new PackedTexturedTriangle(o, c2, c3, t1, t2, t3, material);
+  }
+
+  private static class PackedTexturedTriangle implements Primitive {
+    public final float c1x;
+    public final float c1y;
+    public final float c1z;
+
+    public final float c2x;
+    public final float c2y;
+    public final float c2z;
+
+    public final float c3x;
+    public final float c3y;
+    public final float c3z;
+
+    public final float t1x;
+    public final float t1y;
+
+    public final float t2x;
+    public final float t2y;
+
+    public final float t3x;
+    public final float t3y;
+
+    public final Material material;
+
+    public PackedTexturedTriangle(Vector3 c1, Vector3 c2, Vector3 c3, Vector2 t1, Vector2 t2, Vector2 t3, Material material) {
+      c1x = (float) c1.x;
+      c1y = (float) c1.y;
+      c1z = (float) c1.z;
+
+      c2x = (float) c2.x;
+      c2y = (float) c2.y;
+      c2z = (float) c2.z;
+
+      c3x = (float) c3.x;
+      c3y = (float) c3.y;
+      c3z = (float) c3.z;
+
+      t1x = (float) t1.x;
+      t1y = (float) t1.y;
+
+      t2x = (float) t2.x;
+      t2y = (float) t2.y;
+
+      t3x = (float) t3.x;
+      t3y = (float) t3.y;
+
+      this.material = material;
+    }
+
+    @Override
+    public boolean intersect(Ray ray) {
+      Vector3 e1 = new Vector3(c2x - c1x, c2y - c1y, c2z - c1z);
+      Vector3 e2 = new Vector3(c3x - c1x, c3y - c1y, c3z - c1z);
+
+      // Möller-Trumbore triangle intersection algorithm!
+      Vector3 pvec = new Vector3();
+      Vector3 qvec = new Vector3();
+      Vector3 tvec = new Vector3();
+
+      pvec.cross(ray.d, e2);
+      double det = e1.dot(pvec);
+      if (det > -EPSILON && det < EPSILON) {
+        return false;
+      }
+      double recip = 1 / det;
+
+      tvec.set(ray.o.x - c1x, ray.o.y - c1y, ray.o.z - c1z);
+
+      double u = tvec.dot(pvec) * recip;
+
+      if (u < 0 || u > 1) {
+        return false;
+      }
+
+      qvec.cross(tvec, e1);
+
+      double v = ray.d.dot(qvec) * recip;
+
+      if (v < 0 || (u + v) > 1) {
+        return false;
+      }
+
+      double t = e2.dot(qvec) * recip;
+
+      if (t > EPSILON && t < ray.t) {
+        double w = 1 - u - v;
+        ray.u = t1x * u + t2x * v + t3x * w;
+        ray.v = t1y * u + t2y * v + t3y * w;
+        float[] color = material.getColor(ray.u, ray.v);
+        if (color[3] > 0) {
+          ray.color.set(color);
+          ray.setCurrentMaterial(material);
+          ray.t = t;
+          ray.n.cross(e2, e1);
+          ray.n.normalize();
+          return true;
+        }
+      }
+      return false;
+    }
+
+    @Override
+    public AABB bounds() {
+      return (new TexturedTriangle(new Vector3(c1x, c1y, c1z), new Vector3(c2x, c2y, c2z), new Vector3(c3x, c3y, c3z),
+              new Vector2(t1x, t1y), new Vector2(t2x, t2y), new Vector2(t3x, t3y), material)).bounds();
+    }
+  }
 }

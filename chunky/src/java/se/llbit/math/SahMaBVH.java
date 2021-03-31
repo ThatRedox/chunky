@@ -34,7 +34,9 @@ public class SahMaBVH extends BinaryBVH {
             public BVH.BVHImplementation create(Collection<Entity> entities, Vector3 worldOffset) {
                 List<Primitive> primitives = new ArrayList<>();
                 for (Entity entity : entities) {
-                    primitives.addAll(entity.primitives(worldOffset));
+                    for (Primitive prim : entity.primitives(worldOffset)) {
+                        primitives.add(prim.pack());
+                    }
                 }
                 Primitive[] allPrimitives = primitives.toArray(new Primitive[0]);
                 primitives = null; // Allow the collection to be garbage collected during construction when only the array is used

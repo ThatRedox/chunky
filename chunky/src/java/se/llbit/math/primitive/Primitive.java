@@ -37,4 +37,13 @@ public interface Primitive {
    * @return axis-aligned bounding box for the primitive
    */
   AABB bounds();
+
+  /**
+   * Pack this primitive for lower memory at the expense of clarity / modifiability.
+   *
+   * @return A packed primitive.
+   */
+  default Primitive pack() {
+    return this;
+  }
 }
