@@ -33,17 +33,19 @@ import static se.llbit.math.Ray.OFFSET;
  * and faster array based BVH. It also provides an implementation for {@code closestIntersection}.
  */
 public abstract class BinaryBVH implements BVH.BVHImplementation {
+    /** The threshold size to use a parallel sort. */
+    public final static int PARALLEL_SORT_THRESHOLD = 1<<10;
+
     /** Note: This is public for some plugins. Stability is not guaranteed. */
     public int[] packed;
     public int depth;
     public Primitive[][] packedPrimitives;
 
+    /** A node in a node based BVH */
     public static abstract class Node {
         public final AABB bb;
 
-        /**
-         * Create new BVH node with specific bounds.
-         */
+        /** Create new BVH node with specific bounds. */
         public Node(AABB bb) {
             this.bb = bb;
         }
@@ -51,14 +53,13 @@ public abstract class BinaryBVH implements BVH.BVHImplementation {
         abstract public int size();
     }
 
+    /** A branch in a node based BVH */
     public static class Group extends Node {
         public Node child1;
         public Node child2;
         private final int numPrimitives;
 
-        /**
-         * Create a new BVH node.
-         */
+        /** Create a new BVH branch. */
         public Group(Node child1, Node child2) {
             super(child1.bb.expand(child2.bb));
             this.numPrimitives = child1.size() + child2.size();
@@ -72,9 +73,11 @@ public abstract class BinaryBVH implements BVH.BVHImplementation {
         }
     }
 
+    /** A leaf in a node based BVH */
     public static class Leaf extends Node {
         public final Primitive[] primitives;
 
+        /** Create a new BVH leaf. */
         public Leaf(Primitive[] primitives) {
             super(bb(primitives));
             this.primitives = primitives;
@@ -85,20 +88,12 @@ public abstract class BinaryBVH implements BVH.BVHImplementation {
         }
     }
 
-    public interface Selector {
-        boolean select(AABB bounds, double split);
-    }
-
     public final Comparator<Primitive> cmpX = (g1, g2) -> {
         AABB b1 = g1.bounds();
         AABB b2 = g2.bounds();
         double c1 = b1.xmin + (b1.xmax - b1.xmin) / 2;
         double c2 = b2.xmin + (b2.xmax - b2.xmin) / 2;
         return Double.compare(c1, c2);
-    };
-    public final Selector selectX = (bounds, split) -> {
-        double centroid = bounds.xmin + (bounds.xmax - bounds.xmin) / 2;
-        return centroid < split;
     };
     public final Comparator<Primitive> cmpY = (g1, g2) -> {
         AABB b1 = g1.bounds();
@@ -107,20 +102,12 @@ public abstract class BinaryBVH implements BVH.BVHImplementation {
         double c2 = b2.ymin + (b2.ymax - b2.ymin) / 2;
         return Double.compare(c1, c2);
     };
-    public final Selector selectY = (bounds, split) -> {
-        double centroid = bounds.ymin + (bounds.ymax - bounds.ymin) / 2;
-        return centroid < split;
-    };
     public final Comparator<Primitive> cmpZ = (g1, g2) -> {
         AABB b1 = g1.bounds();
         AABB b2 = g2.bounds();
         double c1 = b1.zmin + (b1.zmax - b1.zmin) / 2;
         double c2 = b2.zmin + (b2.zmax - b2.zmin) / 2;
         return Double.compare(c1, c2);
-    };
-    public final Selector selectZ = (bounds, split) -> {
-        double centroid = bounds.zmin + (bounds.zmax - bounds.zmin) / 2;
-        return centroid < split;
     };
 
     /**

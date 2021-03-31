@@ -130,6 +130,9 @@ public class TexturedTriangle implements Primitive {
     return bounds;
   }
 
+  /**
+   * Pack this textured triangle. The resulting {@code Primitive} takes ~1/5th the memory of the whole triangle.
+   */
   @Override
   public Primitive pack() {
     Vector3 c2 = new Vector3(e1);
@@ -141,28 +144,28 @@ public class TexturedTriangle implements Primitive {
   }
 
   private static class PackedTexturedTriangle implements Primitive {
-    public final float c1x;
-    public final float c1y;
-    public final float c1z;
+    private final float c1x;
+    private final float c1y;
+    private final float c1z;
 
-    public final float c2x;
-    public final float c2y;
-    public final float c2z;
+    private final float c2x;
+    private final float c2y;
+    private final float c2z;
 
-    public final float c3x;
-    public final float c3y;
-    public final float c3z;
+    private final float c3x;
+    private final float c3y;
+    private final float c3z;
 
-    public final float t1x;
-    public final float t1y;
+    private final float t1x;
+    private final float t1y;
 
-    public final float t2x;
-    public final float t2y;
+    private final float t2x;
+    private final float t2y;
 
-    public final float t3x;
-    public final float t3y;
+    private final float t3x;
+    private final float t3y;
 
-    public final Material material;
+    private final Material material;
 
     public PackedTexturedTriangle(Vector3 c1, Vector3 c2, Vector3 c3, Vector2 t1, Vector2 t2, Vector2 t3, Material material) {
       c1x = (float) c1.x;

@@ -53,6 +53,14 @@ public class MidpointBVH extends BinaryBVH {
         Log.info("Built MIDPOINT BVH with depth: " + this.depth);
     }
 
+    private interface Selector {
+        boolean select(AABB bounds, double split);
+    }
+
+    private final Selector selectX = (bounds, split) -> bounds.xmin + (bounds.xmax - bounds.xmin) / 2 < split;
+    private final Selector selectY = (bounds, split) -> bounds.ymin + (bounds.ymax - bounds.ymin) / 2 < split;
+    private final Selector selectZ = (bounds, split) -> bounds.zmin + (bounds.zmax - bounds.zmin) / 2 < split;
+
     private enum Action {
         PUSH,
         MERGE,

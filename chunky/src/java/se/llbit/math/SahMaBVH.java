@@ -30,14 +30,11 @@ import java.util.*;
 import static se.llbit.math.BVH.SPLIT_LIMIT;
 
 public class SahMaBVH extends BinaryBVH {
-    /** The threshold size to use a parallel sort. */
-    public final static int PARALLEL_SORT_THRESHOLD = 1<<10;
-
     public static void initImplementation() {
         BVH.factories.put("SAH_MA", new BVH.ImplementationFactory() {
             @Override
             public BVH.BVHImplementation create(Collection<Entity> entities, Vector3 worldOffset) {
-                List<Primitive> primitives = new ArrayList<>();
+                List<Primitive> primitives = new ArrayList<>(entities.size());
                 for (Entity entity : entities) {
                     for (Primitive prim : entity.primitives(worldOffset)) {
                         primitives.add(prim.pack());
