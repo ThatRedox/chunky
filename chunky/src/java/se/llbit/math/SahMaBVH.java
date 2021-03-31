@@ -17,6 +17,8 @@
  */
 package se.llbit.math;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import org.apache.commons.math3.util.FastMath;
 import se.llbit.chunky.entity.Entity;
 import se.llbit.chunky.main.Chunky;
 import se.llbit.log.Log;
@@ -51,48 +53,40 @@ public class SahMaBVH extends BinaryBVH {
     }
 
     public SahMaBVH(Primitive[] primitives) {
-        Node root = constructSAH_MA(primitives);
-        pack(root);
-        System.out.printf("primitives: %d\n", primitives.length);
-        Log.info("Built SAH_MA BVH with depth: " + this.depth);
-    }
+        IntArrayList data = new IntArrayList(primitives.length);
+        ArrayList<Primitive[]> packedPrimitives = new ArrayList<>(primitives.length / SPLIT_LIMIT);
 
-    private enum Action {
-        PUSH,
-        MERGE,
+        this.depth = constructSAH_MA(primitives, data, packedPrimitives, 0, primitives.length);
+        this.packed = data.toIntArray();
+        this.packedPrimitives = packedPrimitives.toArray(new Primitive[0][]);
+        Log.info("Built SAH_MA BVH with depth: " + this.depth);
     }
 
     /**
      * Construct a BVH using Surface Area Heuristic (SAH)
      * This splits along the major axis which usually gets good results.
      */
-    private Node constructSAH_MA(Primitive[] primitives) {
-        Stack<Node> nodes = new Stack<>();
-        Stack<Action> actions = new Stack<>();
-        Stack<Primitive[]> chunks = new Stack<>();
-        chunks.push(primitives);
-        actions.push(Action.PUSH);
-        while (!actions.isEmpty()) {
-            Action action = actions.pop();
-            if (action == Action.MERGE) {
-                nodes.push(new Group(nodes.pop(), nodes.pop()));
-            } else {
-                Primitive[] chunk = chunks.pop();
-                if (chunk.length < SPLIT_LIMIT) {
-                    nodes.push(new Leaf(chunk));
-                } else {
-                    splitSAH_MA(chunk, actions, chunks);
-                }
-            }
+    private int constructSAH_MA(Primitive[] primitives, IntArrayList data, ArrayList<Primitive[]> packedPrimitives, int start, int end) {
+        int index = data.size();
+        data.add(0);
+        AABB bb = bb(primitives, start, end);
+        packAabb(bb, data);
+
+        if (end - start < SPLIT_LIMIT) {
+            data.set(index, -packedPrimitives.size());
+            packedPrimitives.add(Arrays.copyOfRange(primitives, start, end));
+            return 1;
         }
-        return nodes.pop();
+
+        int split = splitSAH_MA(primitives, bb, start, end);
+        int depth1 = constructSAH_MA(primitives, data, packedPrimitives, start, split);
+        data.set(index, data.size());
+        int depth2 = constructSAH_MA(primitives, data, packedPrimitives, split, end);
+
+        return FastMath.max(depth1, depth2)+1;
     }
 
-    /**
-     * Split a chunk based on Surface Area Heuristic of all possible splits on the major axis.
-     */
-    private void splitSAH_MA(Primitive[] chunk, Stack<Action> actions, Stack<Primitive[]> chunks) {
-        AABB bb = bb(chunk);
+    private int splitSAH_MA(Primitive[] primitives, AABB bb, int start, int end) {
         double xl = bb.xmax - bb.xmin;
         double yl = bb.ymax - bb.ymin;
         double zl = bb.zmax - bb.zmin;
@@ -108,40 +102,54 @@ public class SahMaBVH extends BinaryBVH {
         MutableAABB bounds = new MutableAABB(0, 0, 0, 0, 0, 0);
         double cmin = Double.POSITIVE_INFINITY;
         int split = 0;
-        int end = chunk.length;
 
-        double[] sl = new double[end];
-        double[] sr = new double[end];
+        double[] sl = new double[end-start];
+        double[] sr = new double[end-start];
 
-        Chunky.getCommonThreads().submit(() -> Arrays.parallelSort(chunk, cmp)).join();
-        for (int i = 0; i < end - 1; ++i) {
-            bounds.expand(chunk[i].bounds());
+        Chunky.getCommonThreads().submit(() -> Arrays.parallelSort(primitives, start, end, cmp)).join();
+        for (int i = 0; i < sl.length; ++i) {
+            bounds.expand(primitives[start+i].bounds());
             sl[i] = bounds.surfaceArea();
         }
         bounds = new MutableAABB(0, 0, 0, 0, 0, 0);
-        for (int i = end - 1; i > 0; --i) {
-            bounds.expand(chunk[i].bounds());
-            sr[i - 1] = bounds.surfaceArea();
+        for (int i = sr.length-1; i > 0; --i) {
+            bounds.expand(primitives[start+i].bounds());
+            sr[i-1] = bounds.surfaceArea();
         }
-        for (int i = 0; i < end - 1; ++i) {
-            double c = sl[i] * (i + 1) + sr[i] * (end - i - 1);
+        for (int i = 0; i < sl.length - 1; ++i) {
+            double c = sl[i] * (i + 1) + sr[i] * (sl.length - i - 1);
             if (c < cmin) {
                 cmin = c;
                 split = i;
             }
         }
 
-        split += 1;
+        return start+split+1;
+    }
 
-        actions.push(Action.MERGE);
-        Primitive[] cons = new Primitive[split];
-        System.arraycopy(chunk, 0, cons, 0, split);
-        chunks.push(cons);
-        actions.push(Action.PUSH);
+    private AABB bb(Primitive[] primitives, int start, int end) {
+        double xmin = Double.POSITIVE_INFINITY;
+        double xmax = Double.NEGATIVE_INFINITY;
+        double ymin = Double.POSITIVE_INFINITY;
+        double ymax = Double.NEGATIVE_INFINITY;
+        double zmin = Double.POSITIVE_INFINITY;
+        double zmax = Double.NEGATIVE_INFINITY;
 
-        cons = new Primitive[end - split];
-        System.arraycopy(chunk, split, cons, 0, end - split);
-        chunks.push(cons);
-        actions.push(Action.PUSH);
+        for (int i = start; i < end; i++) {
+            AABB bb = primitives[i].bounds();
+            if (bb.xmin < xmin)
+                xmin = bb.xmin;
+            if (bb.xmax > xmax)
+                xmax = bb.xmax;
+            if (bb.ymin < ymin)
+                ymin = bb.ymin;
+            if (bb.ymax > ymax)
+                ymax = bb.ymax;
+            if (bb.zmin < zmin)
+                zmin = bb.zmin;
+            if (bb.zmax > zmax)
+                zmax = bb.zmax;
+        }
+        return new AABB(xmin, xmax, ymin, ymax, zmin, zmax);
     }
 }

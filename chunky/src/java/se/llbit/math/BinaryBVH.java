@@ -167,7 +167,7 @@ public abstract class BinaryBVH implements BVH.BVHImplementation {
     }
 
     /** Pack an AABB into 6 floats (and store the bits in 6 consecutive ints). */
-    private void packAabb(AABB box, IntArrayList data) {
+    public void packAabb(AABB box, IntArrayList data) {
         data.add(Float.floatToIntBits((float) box.xmin));
         data.add(Float.floatToIntBits((float) box.xmax));
         data.add(Float.floatToIntBits((float) box.ymin));
