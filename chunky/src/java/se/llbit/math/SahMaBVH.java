@@ -78,6 +78,7 @@ public class SahMaBVH extends BinaryBVH {
         if (end - start < SPLIT_LIMIT) {
             data.set(index, -packedPrimitives.size());
             packedPrimitives.add(Arrays.copyOfRange(primitives, start, end));
+            Arrays.fill(primitives, start, end, null);  // Fill with null to allow for GC
             return 1;
         }
 

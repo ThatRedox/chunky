@@ -191,38 +191,57 @@ public class TexturedTriangle implements Primitive {
 
     @Override
     public boolean intersect(Ray ray) {
-      Vector3 e1 = new Vector3(c2x - c1x, c2y - c1y, c2z - c1z);
-      Vector3 e2 = new Vector3(c3x - c1x, c3y - c1y, c3z - c1z);
-
       // Möller-Trumbore triangle intersection algorithm!
-      Vector3 pvec = new Vector3();
-      Vector3 qvec = new Vector3();
-      Vector3 tvec = new Vector3();
+      float e1x = c2x - c1x;
+      float e1y = c2y - c1y;
+      float e1z = c2z - c1z;
 
-      pvec.cross(ray.d, e2);
-      double det = e1.dot(pvec);
+      float e2x = c3x - c1x;
+      float e2y = c3y - c1y;
+      float e2z = c3z - c1z;
+
+      float px, py, pz;
+      float qx, qy, qz;
+      float tx, ty, tz;
+
+      // pvec = ray.d × e2
+      px = (float) (ray.d.y * e2z - ray.d.z * e2y);
+      py = (float) (ray.d.z * e2x - ray.d.x * e2z);
+      pz = (float) (ray.d.x * e2y - ray.d.y * e2x);
+
+      // det = e1 · pvec
+      float det = e1x * px + e1y * py + e1z * pz;
       if (det > -EPSILON && det < EPSILON) {
         return false;
       }
-      double recip = 1 / det;
+      float recip = 1 / det;
 
-      tvec.set(ray.o.x - c1x, ray.o.y - c1y, ray.o.z - c1z);
+      // tvec = ray.o - c1;
+      tx = (float) (ray.o.x - c1x);
+      ty = (float) (ray.o.y - c1y);
+      tz = (float) (ray.o.z - c1z);
 
-      double u = tvec.dot(pvec) * recip;
+      // u = (tvec · pvec) / det
+      float u = (tx * px + ty * py + tz * pz) * recip;
 
       if (u < 0 || u > 1) {
         return false;
       }
 
-      qvec.cross(tvec, e1);
+      // qvec = tvec × e1
+      qx = ty * e1z - tz * e1y;
+      qy = tz * e1x - tx * e1z;
+      qz = tx * e1y - ty * e1x;
 
-      double v = ray.d.dot(qvec) * recip;
+      // v = (ray.d · qvec) / det
+      float v = (float) (ray.d.x * qx + ray.d.y * qy + ray.d.z * qz) * recip;
 
       if (v < 0 || (u + v) > 1) {
         return false;
       }
 
-      double t = e2.dot(qvec) * recip;
+      // t = (e2 · qvec) / det
+      float t = (e2x * qx + e2y * qy + e2z * qz) * recip;
 
       if (t > EPSILON && t < ray.t) {
         double w = 1 - u - v;
@@ -233,7 +252,12 @@ public class TexturedTriangle implements Primitive {
           ray.color.set(color);
           ray.setCurrentMaterial(material);
           ray.t = t;
-          ray.n.cross(e2, e1);
+          // ray.n = e2 × e1
+          ray.n.set(
+                  e2y * e1z - e2z * e1y,
+                  e2z * e1x - e2x * e1z,
+                  e2x * e1y - e2y * e1x
+          );
           ray.n.normalize();
           return true;
         }
