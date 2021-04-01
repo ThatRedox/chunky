@@ -45,9 +45,15 @@ public class TexturedTriangle implements Primitive {
   public final boolean doubleSided;
 
   /**
-   * @param c1 first corner
-   * @param c2 second corner
-   * @param c3 third corner
+   * Create a double sided textured triangle.
+   *
+   * @param c1 First corner
+   * @param c2 Second corner
+   * @param c3 Third corner
+   * @param t1 First corner UV
+   * @param t2 Second corner UV
+   * @param t3 Third corner UV
+   * @param material Material
    */
   public TexturedTriangle(Vector3 c1, Vector3 c2, Vector3 c3, Vector2 t1, Vector2 t2,
       Vector2 t3, Material material) {
@@ -55,9 +61,14 @@ public class TexturedTriangle implements Primitive {
   }
 
   /**
-   * @param c1 first corner
-   * @param c2 second corner
-   * @param c3 third corner
+   * @param c1 First corner
+   * @param c2 Second corner
+   * @param c3 Third corner
+   * @param t1 First corner UV
+   * @param t2 Second corner UV
+   * @param t3 Third corner UV
+   * @param material Material
+   * @param doubleSided If this textured triangle should be intersectable from both sides
    */
   public TexturedTriangle(Vector3 c1, Vector3 c2, Vector3 c3, Vector2 t1, Vector2 t2,
       Vector2 t3, Material material, boolean doubleSided) {
@@ -143,30 +154,49 @@ public class TexturedTriangle implements Primitive {
     return new PackedTexturedTriangle(o, c2, c3, t1, t2, t3, material);
   }
 
+  /**
+   * A packed version of {@Code TexturedTriangle}. This object takes ~1/5th the memory of the whole triangle.
+   * Vectors are unwrapped into their components and floats are used where possible.
+   */
   private static class PackedTexturedTriangle implements Primitive {
+    /** First corner */
     private final float c1x;
     private final float c1y;
     private final float c1z;
 
+    /** Second corner */
     private final float c2x;
     private final float c2y;
     private final float c2z;
 
+    /** Third corner */
     private final float c3x;
     private final float c3y;
     private final float c3z;
 
+    /** First corner UV mapping */
     private final float t1x;
     private final float t1y;
 
+    /** Second corner UV mapping */
     private final float t2x;
     private final float t2y;
 
+    /** Third corner UV mapping */
     private final float t3x;
     private final float t3y;
 
     private final Material material;
 
+    /**
+     * @param c1 First corner
+     * @param c2 Second corner
+     * @param c3 Third corner
+     * @param t1 First corner UV
+     * @param t2 Second corner UV
+     * @param t3 Third corner UV
+     * @param material Material
+     */
     public PackedTexturedTriangle(Vector3 c1, Vector3 c2, Vector3 c3, Vector2 t1, Vector2 t2, Vector2 t3, Material material) {
       c1x = (float) c1.x;
       c1y = (float) c1.y;
@@ -192,6 +222,9 @@ public class TexturedTriangle implements Primitive {
       this.material = material;
     }
 
+    /**
+     * This is the same algorithm (Möller-Trumbore) as the unpacked triangle except Vectors are unwrapped where possible.
+     */
     @Override
     public boolean intersect(Ray ray) {
       // Möller-Trumbore triangle intersection algorithm!
@@ -275,10 +308,12 @@ public class TexturedTriangle implements Primitive {
                       min3(c1z, c2z, c3z), max3(c1z, c2z, c3z));
     }
 
+    // Calculate the maximum of 3 floats
     private static float max3(float a, float b, float c) {
       return FastMath.max(a, FastMath.max(b, c));
     }
 
+    // Calculate the minimum of 3 floats
     private static float min3(float a, float b, float c) {
       return FastMath.min(a, FastMath.min(b, c));
     }
