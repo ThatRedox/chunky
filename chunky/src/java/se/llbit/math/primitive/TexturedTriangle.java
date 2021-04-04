@@ -157,7 +157,7 @@ public class TexturedTriangle implements Primitive {
     Vector3 c3 = new Vector3(e2);
     c3.add(o);
 
-    return new PackedTexturedTriangle(o, c2, c3, t1, t2, t3, material);
+    return new PackedTexturedTriangle(o, c2, c3, t1u, t1v, t2u, t2v, t3u, t3v, material);
   }
 
   /**
@@ -198,12 +198,15 @@ public class TexturedTriangle implements Primitive {
      * @param c1 First corner
      * @param c2 Second corner
      * @param c3 Third corner
-     * @param t1 First corner UV
-     * @param t2 Second corner UV
-     * @param t3 Third corner UV
+     * @param t1u First corner U
+     * @param t1v First corner V
+     * @param t2u Second corner U
+     * @param t2v Second corner V
+     * @param t3u Third corner U
+     * @param t3v Third corner V
      * @param material Material
      */
-    public PackedTexturedTriangle(Vector3 c1, Vector3 c2, Vector3 c3, Vector2 t1, Vector2 t2, Vector2 t3, Material material) {
+    public PackedTexturedTriangle(Vector3 c1, Vector3 c2, Vector3 c3, double t1u, double t1v, double t2u, double t2v, double t3u, double t3v, Material material) {
       c1x = (float) c1.x;
       c1y = (float) c1.y;
       c1z = (float) c1.z;
@@ -216,14 +219,14 @@ public class TexturedTriangle implements Primitive {
       c3y = (float) c3.y;
       c3z = (float) c3.z;
 
-      t1x = (float) t1.x;
-      t1y = (float) t1.y;
+      t1x = (float) t1u;
+      t1y = (float) t1v;
 
-      t2x = (float) t2.x;
-      t2y = (float) t2.y;
+      t2x = (float) t2u;
+      t2y = (float) t2v;
 
-      t3x = (float) t3.x;
-      t3y = (float) t3.y;
+      t3x = (float) t3u;
+      t3y = (float) t3v;
 
       this.material = material;
     }

@@ -28,7 +28,6 @@ import se.llbit.math.primitive.Primitive;
 import se.llbit.util.TaskTracker;
 
 import java.util.*;
-import java.util.function.IntConsumer;
 
 import static se.llbit.math.BVH.SPLIT_LIMIT;
 
