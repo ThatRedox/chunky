@@ -18,14 +18,17 @@
 package se.llbit.math;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntConsumer;
 import org.apache.commons.math3.util.FastMath;
 import se.llbit.chunky.entity.Entity;
 import se.llbit.chunky.main.Chunky;
 import se.llbit.log.Log;
 import se.llbit.math.primitive.MutableAABB;
 import se.llbit.math.primitive.Primitive;
+import se.llbit.util.TaskTracker;
 
 import java.util.*;
+import java.util.function.IntConsumer;
 
 import static se.llbit.math.BVH.SPLIT_LIMIT;
 
@@ -33,16 +36,25 @@ public class SahMaBVH extends BinaryBVH {
     public static void initImplementation() {
         BVH.factories.put("SAH_MA", new BVH.ImplementationFactory() {
             @Override
-            public BVH.BVHImplementation create(Collection<Entity> entities, Vector3 worldOffset) {
+            public BVH.BVHImplementation create(Collection<Entity> entities, Vector3 worldOffset, TaskTracker.Task task) {
+                task.update(1000, 0);
+                double entityScaler = 500.0 / entities.size();
+                int done = 0;
+
                 List<Primitive> primitives = new ArrayList<>(entities.size());
                 for (Entity entity : entities) {
                     for (Primitive prim : entity.primitives(worldOffset)) {
                         primitives.add(prim.pack());
                     }
+
+                    done++;
+                    task.updateInterval((int) (done * entityScaler), 1);
                 }
                 Primitive[] allPrimitives = primitives.toArray(new Primitive[0]);
                 primitives = null; // Allow the collection to be garbage collected during construction when only the array is used
-                return new SahMaBVH(allPrimitives);
+
+                double primitiveScaler = 500.0 / allPrimitives.length;
+                return new SahMaBVH(allPrimitives, i -> task.updateInterval((int) (i * primitiveScaler) + 500, 1));
             }
 
             @Override
@@ -52,11 +64,11 @@ public class SahMaBVH extends BinaryBVH {
         });
     }
 
-    public SahMaBVH(Primitive[] primitives) {
+    public SahMaBVH(Primitive[] primitives, IntConsumer task) {
         IntArrayList data = new IntArrayList(primitives.length);
         ArrayList<Primitive> packedPrimitives = new ArrayList<>(primitives.length);
 
-        this.depth = constructSAH_MA(primitives, data, packedPrimitives, 0, primitives.length);
+        this.depth = constructSAH_MA(primitives, task, data, packedPrimitives, 0, primitives.length);
         this.packed = data.toIntArray();
         this.packedPrimitives = packedPrimitives.toArray(new Primitive[0]);
         Log.info("Built SAH_MA BVH with depth: " + this.depth);
@@ -66,7 +78,7 @@ public class SahMaBVH extends BinaryBVH {
      * Construct a BVH using Surface Area Heuristic (SAH)
      * This splits along the major axis which usually gets good results.
      */
-    private int constructSAH_MA(Primitive[] primitives, IntArrayList data, ArrayList<Primitive> packedPrimitives, int start, int end) {
+    private int constructSAH_MA(Primitive[] primitives, IntConsumer task, IntArrayList data, ArrayList<Primitive> packedPrimitives, int start, int end) {
         int index = data.size();
         data.add(0);
         data.add(0);
@@ -82,10 +94,11 @@ public class SahMaBVH extends BinaryBVH {
         }
 
         int split = splitSAH_MA(primitives, bb, start, end);
-        int depth1 = constructSAH_MA(primitives, data, packedPrimitives, start, split);
+        int depth1 = constructSAH_MA(primitives, task, data, packedPrimitives, start, split);
         data.set(index, data.size());
-        int depth2 = constructSAH_MA(primitives, data, packedPrimitives, split, end);
+        int depth2 = constructSAH_MA(primitives, task, data, packedPrimitives, split, end);
 
+        task.accept(end);
         return FastMath.max(depth1, depth2)+1;
     }
 
