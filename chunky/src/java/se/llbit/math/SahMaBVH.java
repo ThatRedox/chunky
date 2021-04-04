@@ -54,11 +54,11 @@ public class SahMaBVH extends BinaryBVH {
 
     public SahMaBVH(Primitive[] primitives) {
         IntArrayList data = new IntArrayList(primitives.length);
-        ArrayList<Primitive[]> packedPrimitives = new ArrayList<>(primitives.length / SPLIT_LIMIT);
+        ArrayList<Primitive> packedPrimitives = new ArrayList<>(primitives.length);
 
         this.depth = constructSAH_MA(primitives, data, packedPrimitives, 0, primitives.length);
         this.packed = data.toIntArray();
-        this.packedPrimitives = packedPrimitives.toArray(new Primitive[0][]);
+        this.packedPrimitives = packedPrimitives.toArray(new Primitive[0]);
         Log.info("Built SAH_MA BVH with depth: " + this.depth);
     }
 
@@ -66,15 +66,17 @@ public class SahMaBVH extends BinaryBVH {
      * Construct a BVH using Surface Area Heuristic (SAH)
      * This splits along the major axis which usually gets good results.
      */
-    private int constructSAH_MA(Primitive[] primitives, IntArrayList data, ArrayList<Primitive[]> packedPrimitives, int start, int end) {
+    private int constructSAH_MA(Primitive[] primitives, IntArrayList data, ArrayList<Primitive> packedPrimitives, int start, int end) {
         int index = data.size();
+        data.add(0);
         data.add(0);
         AABB bb = bb(primitives, start, end);
         packAabb(bb, data);
 
         if (end - start < SPLIT_LIMIT) {
             data.set(index, -packedPrimitives.size());
-            packedPrimitives.add(Arrays.copyOfRange(primitives, start, end));
+            data.set(index+1, end-start);
+            Collections.addAll(packedPrimitives, Arrays.copyOfRange(primitives, start, end));
             Arrays.fill(primitives, start, end, null);  // Fill with null to allow for GC
             return 1;
         }

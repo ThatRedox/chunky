@@ -23,6 +23,7 @@ import org.apache.commons.math3.util.FastMath;
 import se.llbit.math.primitive.Primitive;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 
 import static se.llbit.math.BVH.SPLIT_LIMIT;
@@ -39,7 +40,7 @@ public abstract class BinaryBVH implements BVH.BVHImplementation {
     /** Note: This is public for some plugins. Stability is not guaranteed. */
     public int[] packed;
     public int depth;
-    public Primitive[][] packedPrimitives;
+    public Primitive[] packedPrimitives;
 
     /** A node in a node based BVH */
     public static abstract class Node {
@@ -115,10 +116,10 @@ public abstract class BinaryBVH implements BVH.BVHImplementation {
      */
     public void pack(Node root) {
         IntArrayList data = new IntArrayList(root.size());
-        ArrayList<Primitive[]> packedPrimitives = new ArrayList<>(data.size() / SPLIT_LIMIT);
+        ArrayList<Primitive> packedPrimitives = new ArrayList<>(data.size());
         this.depth = packNode(root, data, packedPrimitives);
         this.packed = data.toIntArray();
-        this.packedPrimitives = packedPrimitives.toArray(new Primitive[0][]);
+        this.packedPrimitives = packedPrimitives.toArray(new Primitive[0]);
     }
 
     /**
@@ -128,10 +129,11 @@ public abstract class BinaryBVH implements BVH.BVHImplementation {
      * int 1-6: AABB bounds stored as floats. Float bits are converted into int bits for more compact storage.
      * This compact array storage helps decrease memory usage and increases intersection speed.
      */
-    public int packNode(Node node, IntArrayList data, ArrayList<Primitive[]> primitives) {
+    public int packNode(Node node, IntArrayList data, ArrayList<Primitive> primitives) {
         int index = data.size();
         int depth;
-        data.add(0);  // Next child (to be set)
+        data.add(0);    // Next child (to be set)
+        data.add(0);    // Number of primitives
         packAabb(node.bb, data);
 
         if (node instanceof Group) {
@@ -144,10 +146,11 @@ public abstract class BinaryBVH implements BVH.BVHImplementation {
         } else if (node instanceof Leaf) {
             depth = 1;
             data.set(index, -primitives.size());  // Negative number = pointer to primitives array
-            primitives.add(((Leaf) node).primitives);
+            data.set(index+1, ((Leaf) node).primitives.length);
+            Collections.addAll(primitives, ((Leaf) node).primitives);
         } else {
             depth = 0;
-            data.set(index, index+7); // Skip this
+            data.set(index, index+8); // Skip this
         }
 
         return depth+1;
@@ -184,23 +187,24 @@ public abstract class BinaryBVH implements BVH.BVHImplementation {
             if (packed[currentNode] <= 0) {
                 // Is leaf
                 int primIndex = -packed[currentNode];
-                for (Primitive primitive : packedPrimitives[primIndex]) {
-                    hit = primitive.intersect(ray) || hit;
+                int primEnd = packed[currentNode+1] + primIndex;
+                for (int i = primIndex; i < primEnd; i++) {
+                    hit = packedPrimitives[i].intersect(ray) || hit;
                 }
 
                 if (nodesToVisit.isEmpty()) break;
                 currentNode = nodesToVisit.popInt();
             } else {
                 // Is branch, find closest node
-                int offset = currentNode+7;
-                double t1 = quickAabbIntersect(ray, Float.intBitsToFloat(packed[offset+1]), Float.intBitsToFloat(packed[offset+2]),
-                        Float.intBitsToFloat(packed[offset+3]), Float.intBitsToFloat(packed[offset+4]),
-                        Float.intBitsToFloat(packed[offset+5]), Float.intBitsToFloat(packed[offset+6]),
+                int offset = currentNode+8;
+                double t1 = quickAabbIntersect(ray, Float.intBitsToFloat(packed[offset+2]), Float.intBitsToFloat(packed[offset+3]),
+                        Float.intBitsToFloat(packed[offset+4]), Float.intBitsToFloat(packed[offset+5]),
+                        Float.intBitsToFloat(packed[offset+6]), Float.intBitsToFloat(packed[offset+7]),
                         rx, ry, rz);
                 offset = packed[currentNode];
-                double t2 = quickAabbIntersect(ray, Float.intBitsToFloat(packed[offset+1]), Float.intBitsToFloat(packed[offset+2]),
-                        Float.intBitsToFloat(packed[offset+3]), Float.intBitsToFloat(packed[offset+4]),
-                        Float.intBitsToFloat(packed[offset+5]), Float.intBitsToFloat(packed[offset+6]),
+                double t2 = quickAabbIntersect(ray, Float.intBitsToFloat(packed[offset+2]), Float.intBitsToFloat(packed[offset+3]),
+                        Float.intBitsToFloat(packed[offset+4]), Float.intBitsToFloat(packed[offset+5]),
+                        Float.intBitsToFloat(packed[offset+6]), Float.intBitsToFloat(packed[offset+7]),
                         rx, ry, rz);
 
                 if (t1 == -1 || t1 > ray.t) {
@@ -211,12 +215,12 @@ public abstract class BinaryBVH implements BVH.BVHImplementation {
                         currentNode = packed[currentNode];
                     }
                 } else if (t2 == -1 || t2 > ray.t) {
-                    currentNode += 7;
+                    currentNode += 8;
                 } else if (t1 < t2) {
                     nodesToVisit.push(packed[currentNode]);
-                    currentNode += 7;
+                    currentNode += 8;
                 } else {
-                    nodesToVisit.push(currentNode + 7);
+                    nodesToVisit.push(currentNode + 8);
                     currentNode = packed[currentNode];
                 }
             }
