@@ -31,71 +31,56 @@ import java.util.Map;
  *
  * @author Jesper Öqvist <jesper.oqvist@cs.lth.se>
  */
-public class BVH {
-  public static final int SPLIT_LIMIT = 4;
-
-  public static final BVHImplementation EMPTY_IMPLEMENTATION = ray -> false;
-  public static final BVH EMPTY = new BVH(EMPTY_IMPLEMENTATION);
-
-  public interface BVHImplementation {
-    /**
-     * Find closest intersection between the ray and any object in the BVH
-     *
-     * @return {@code true} if there exists any intersection
-     */
-    boolean closestIntersection(Ray ray);
-  }
-
-  public interface ImplementationFactory {
-    BVHImplementation create(Collection<Entity> entities, Vector3 worldOffset, TaskTracker.Task task);
-
-    String getTooltip();
-  }
+public interface BVH {
+  public static BVH EMPTY = ray -> false;
 
   /**
-   * Map containing all known implementation (factories) and their name. Elements are addressed by the String name.
-   * Values must implement {@code BVH.ImplementationFactory}.
-   */
-  @PluginApi
-  public static Map<String, ImplementationFactory> factories = new HashMap<>();
-
-  public static final String DEFAULT_IMPLEMENTATION = "SAH_MA";
-
-  public static ImplementationFactory getImplementationFactory(String name) {
-    return factories.getOrDefault(name, factories.get(DEFAULT_IMPLEMENTATION));
-  }
-
-  static {
-    MidpointBVH.initImplementation();
-    SahBVH.initImplementation();
-    SahMaBVH.initImplementation();
-  }
-
-  public final BVHImplementation implementation;
-
-  /**
-   * Construct a new BVH containing the given entities. This will generate the BVH using the
-   * persistent BVH method (default is SAH_MA).
-   */
-  public BVH(Collection<Entity> entities, Vector3 worldOffset, TaskTracker.Task task) {
-    this(
-      entities.isEmpty()
-        ? EMPTY_IMPLEMENTATION
-        : getImplementationFactory(PersistentSettings.getBvhMethod())
-            .create(entities, worldOffset, task)
-    );
-  }
-
-  private BVH(BVHImplementation implementation) {
-    this.implementation = implementation;
-  }
-
-  /**
-   * Calculate the closest intersection between a ray and a primitive in this BVH. Algorithm is implementation dependent.
+   * Find closest intersection between the ray and any object in the BVH
    *
    * @return {@code true} if there exists any intersection
    */
-  public boolean closestIntersection(Ray ray) {
-    return implementation.closestIntersection(ray);
+  boolean closestIntersection(Ray ray);
+
+  public static final int SPLIT_LIMIT = 4;
+
+  final class Factory {
+
+    public interface BVHBuilder {
+      BVH create(Collection<Entity> entities, Vector3 worldOffset, TaskTracker.Task task);
+
+      String getTooltip();
+    }
+
+    /**
+     * Map containing all known BVH implementations and their name.
+     * Elements are addressed by the String name.
+     */
+    @PluginApi
+    public static Map<String, BVHBuilder> implementations = new HashMap<>();
+
+    public static final String DEFAULT_IMPLEMENTATION = "SAH_MA";
+
+    public static BVHBuilder getImplementation(String name) {
+      return implementations.getOrDefault(name, implementations.get(DEFAULT_IMPLEMENTATION));
+    }
+
+    static {
+      MidpointBVH.initImplementation();
+      SahBVH.initImplementation();
+      SahMaBVH.initImplementation();
+    }
+
+    /**
+     * Construct a new BVH containing the given entities. This will generate the BVH using the
+     * persistent BVH method (default is SAH_MA).
+     */
+    public static BVH create(Collection<Entity> entities, Vector3 worldOffset, TaskTracker.Task task) {
+      if (entities.isEmpty()) {
+        return BVH.EMPTY;
+      } else {
+        return getImplementation(PersistentSettings.getBvhMethod())
+          .create(entities, worldOffset, task);
+      }
+    }
   }
 }

@@ -1325,12 +1325,12 @@ public class Scene implements JsonSerializable, Refreshable {
 
   private void buildBvh(TaskTracker.Task task) {
     Vector3 worldOffset = new Vector3(-origin.x, -origin.y, -origin.z);
-    bvh = new BVH(entities, worldOffset, task);
+    bvh = BVH.Factory.create(entities, worldOffset, task);
   }
 
   private void buildActorBvh(TaskTracker.Task task) {
     Vector3 worldOffset = new Vector3(-origin.x, -origin.y, -origin.z);
-    actorBvh = new BVH(actors, worldOffset, task);
+    actorBvh = BVH.Factory.create(actors, worldOffset, task);
   }
 
   /**

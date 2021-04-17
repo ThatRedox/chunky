@@ -25,14 +25,13 @@ import se.llbit.math.primitive.Primitive;
 import java.util.ArrayList;
 import java.util.Comparator;
 
-import static se.llbit.math.BVH.SPLIT_LIMIT;
 import static se.llbit.math.Ray.OFFSET;
 
 /**
  * An abstract class for BinaryBVHs. This provides helper methods for packing a node based BVH into a more compact
  * and faster array based BVH. It also provides an implementation for {@code closestIntersection}.
  */
-public abstract class BinaryBVH implements BVH.BVHImplementation {
+public abstract class BinaryBVH implements BVH {
     /** Note: This is public for some plugins. Stability is not guaranteed. */
     public int[] packed;
     public int depth;

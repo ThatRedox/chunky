@@ -26,13 +26,11 @@ import se.llbit.util.TaskTracker;
 import java.util.*;
 import java.util.function.IntConsumer;
 
-import static se.llbit.math.BVH.SPLIT_LIMIT;
-
 public class MidpointBVH extends BinaryBVH {
     public static void initImplementation() {
-        BVH.factories.put("MIDPOINT", new BVH.ImplementationFactory() {
+        Factory.implementations.put("MIDPOINT", new Factory.BVHBuilder() {
             @Override
-            public BVH.BVHImplementation create(Collection<Entity> entities, Vector3 worldOffset, TaskTracker.Task task) {
+            public BVH create(Collection<Entity> entities, Vector3 worldOffset, TaskTracker.Task task) {
                 task.update(1000, 0);
                 double entityScaler = 500.0 / entities.size();
                 int done = 0;
