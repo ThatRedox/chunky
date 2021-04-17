@@ -34,12 +34,21 @@ import java.util.Map;
 public class BVH {
   public static final int SPLIT_LIMIT = 4;
 
+  public static final BVHImplementation EMPTY_IMPLEMENTATION = ray -> false;
+  public static final BVH EMPTY = new BVH(EMPTY_IMPLEMENTATION);
+
   public interface BVHImplementation {
+    /**
+     * Find closest intersection between the ray and any object in the BVH
+     *
+     * @return {@code true} if there exists any intersection
+     */
     boolean closestIntersection(Ray ray);
   }
 
   public interface ImplementationFactory {
     BVHImplementation create(Collection<Entity> entities, Vector3 worldOffset, TaskTracker.Task task);
+
     String getTooltip();
   }
 
@@ -51,6 +60,7 @@ public class BVH {
   public static Map<String, ImplementationFactory> factories = new HashMap<>();
 
   public static final String DEFAULT_IMPLEMENTATION = "SAH_MA";
+
   public static ImplementationFactory getImplementationFactory(String name) {
     return factories.getOrDefault(name, factories.get(DEFAULT_IMPLEMENTATION));
   }
@@ -68,11 +78,22 @@ public class BVH {
    * persistent BVH method (default is SAH_MA).
    */
   public BVH(Collection<Entity> entities, Vector3 worldOffset, TaskTracker.Task task) {
-    implementation = getImplementationFactory(PersistentSettings.getBvhMethod()).create(entities, worldOffset, task);
+    this(
+      entities.isEmpty()
+        ? EMPTY_IMPLEMENTATION
+        : getImplementationFactory(PersistentSettings.getBvhMethod())
+            .create(entities, worldOffset, task)
+    );
+  }
+
+  private BVH(BVHImplementation implementation) {
+    this.implementation = implementation;
   }
 
   /**
    * Calculate the closest intersection between a ray and a primitive in this BVH. Algorithm is implementation dependent.
+   *
+   * @return {@code true} if there exists any intersection
    */
   public boolean closestIntersection(Ray ray) {
     return implementation.closestIntersection(ray);

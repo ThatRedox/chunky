@@ -58,7 +58,7 @@ public class Poser extends Stage implements Initializable {
   private static final WritablePixelFormat<IntBuffer> PIXEL_FORMAT =
       PixelFormat.getIntArgbInstance();
   private final EntitiesTab.EntityData player;
-  private BVH bvh = new BVH(Collections.emptyList(), new Vector3(), TaskTracker.Task.NONE);
+  private BVH bvh = BVH.EMPTY;
   private int[] pixels;
   private int width = 300;
   private int height = 300;
