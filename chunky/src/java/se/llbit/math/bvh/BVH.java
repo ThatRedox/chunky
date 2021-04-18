@@ -15,11 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with Chunky.  If not, see <http://www.gnu.org/licenses/>.
  */
-package se.llbit.math;
+package se.llbit.math.bvh;
 
 import se.llbit.chunky.PersistentSettings;
 import se.llbit.chunky.entity.Entity;
 import se.llbit.chunky.plugin.PluginApi;
+import se.llbit.math.Intersectable;
+import se.llbit.math.Ray;
+import se.llbit.math.Vector3;
 import se.llbit.util.TaskTracker;
 
 import java.util.Collection;
@@ -31,14 +34,15 @@ import java.util.Map;
  *
  * @author Jesper Öqvist <jesper.oqvist@cs.lth.se>
  */
-public interface BVH {
-  public static BVH EMPTY = ray -> false;
+public interface BVH extends Intersectable {
+  BVH EMPTY = ray -> false;
 
   /**
    * Find closest intersection between the ray and any object in the BVH
    *
    * @return {@code true} if there exists any intersection
    */
+  @Override
   boolean closestIntersection(Ray ray);
 
   public static final int SPLIT_LIMIT = 4;

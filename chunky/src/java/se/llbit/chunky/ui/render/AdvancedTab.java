@@ -37,7 +37,7 @@ import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.ui.IntegerAdjuster;
 import se.llbit.chunky.ui.RenderControlsFxController;
 import se.llbit.chunky.ui.ShutdownAlert;
-import se.llbit.math.BVH;
+import se.llbit.math.bvh.BVH;
 import se.llbit.math.Octree;
 
 import java.io.File;

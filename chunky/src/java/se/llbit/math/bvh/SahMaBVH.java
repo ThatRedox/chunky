@@ -15,11 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with Chunky.  If not, see <http://www.gnu.org/licenses/>.
  */
-package se.llbit.math;
+package se.llbit.math.bvh;
 
 import se.llbit.chunky.entity.Entity;
 import se.llbit.chunky.main.Chunky;
 import se.llbit.log.Log;
+import se.llbit.math.AABB;
+import se.llbit.math.Vector3;
 import se.llbit.math.primitive.MutableAABB;
 import se.llbit.math.primitive.Primitive;
 import se.llbit.util.TaskTracker;

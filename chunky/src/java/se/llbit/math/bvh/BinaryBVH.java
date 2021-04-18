@@ -15,11 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with Chunky.  If not, see <http://www.gnu.org/licenses/>.
  */
-package se.llbit.math;
+package se.llbit.math.bvh;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntStack;
 import org.apache.commons.math3.util.FastMath;
+import se.llbit.math.AABB;
+import se.llbit.math.Ray;
 import se.llbit.math.primitive.Primitive;
 
 import java.util.ArrayList;

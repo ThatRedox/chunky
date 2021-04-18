@@ -36,7 +36,7 @@ import org.apache.commons.math3.util.FastMath;
 import se.llbit.chunky.renderer.scene.Camera;
 import se.llbit.chunky.renderer.scene.PlayerModel;
 import se.llbit.chunky.ui.DoubleAdjuster;
-import se.llbit.math.BVH;
+import se.llbit.math.bvh.BVH;
 import se.llbit.math.ColorUtil;
 import se.llbit.math.Matrix3;
 import se.llbit.math.QuickMath;
