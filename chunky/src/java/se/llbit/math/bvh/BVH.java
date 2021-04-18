@@ -45,8 +45,6 @@ public interface BVH extends Intersectable {
   @Override
   boolean closestIntersection(Ray ray);
 
-  public static final int SPLIT_LIMIT = 4;
-
   final class Factory {
 
     public interface BVHBuilder {
@@ -62,16 +60,17 @@ public interface BVH extends Intersectable {
     @PluginApi
     public static Map<String, BVHBuilder> implementations = new HashMap<>();
 
-    public static final String DEFAULT_IMPLEMENTATION = "SAH_MA";
+    public static final BVHBuilder DEFAULT_IMPLEMENTATION;
 
     public static BVHBuilder getImplementation(String name) {
-      return implementations.getOrDefault(name, implementations.get(DEFAULT_IMPLEMENTATION));
+      return implementations.getOrDefault(name, DEFAULT_IMPLEMENTATION);
     }
 
     static {
       MidpointBVH.initImplementation();
       SahBVH.initImplementation();
       SahMaBVH.initImplementation();
+      DEFAULT_IMPLEMENTATION = implementations.get("SAH_MA");
     }
 
     /**

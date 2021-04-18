@@ -34,6 +34,9 @@ import static se.llbit.math.Ray.OFFSET;
  * and faster array based BVH. It also provides an implementation for {@code closestIntersection}.
  */
 public abstract class BinaryBVH implements BVH {
+
+    public static final int SPLIT_LIMIT = 4;
+
     /** Note: This is public for some plugins. Stability is not guaranteed. */
     public int[] packed;
     public int depth;

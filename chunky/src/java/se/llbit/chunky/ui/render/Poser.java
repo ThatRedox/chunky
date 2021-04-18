@@ -42,13 +42,11 @@ import se.llbit.math.Matrix3;
 import se.llbit.math.QuickMath;
 import se.llbit.math.Ray;
 import se.llbit.math.Vector3;
-import se.llbit.util.TaskTracker;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.IntBuffer;
-import java.util.Collections;
 import java.util.ResourceBundle;
 
 /**
