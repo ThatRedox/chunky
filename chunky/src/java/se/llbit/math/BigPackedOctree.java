@@ -20,6 +20,7 @@ import se.llbit.chunky.block.UnknownBlock;
 import se.llbit.chunky.chunk.BlockPalette;
 import se.llbit.chunky.plugin.PluginApi;
 import se.llbit.chunky.world.Material;
+import se.llbit.util.TaskTracker;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -362,9 +363,17 @@ public class BigPackedOctree implements Octree.OctreeImplementation {
   }
 
   @Override
-  public void store(DataOutputStream output) throws IOException {
+  public void store(DataOutputStream output, TaskTracker.Task task) throws IOException {
+    int target;
+    if (size > Integer.MAX_VALUE) {
+      target = (int) (size >>> 32);
+    } else {
+      target = (int) size;
+    }
+
     output.writeInt(depth);
-    storeNode(output, 0);
+    task.update(target, 0);
+    storeNode(output, 0, task);
   }
 
   @Override
@@ -399,14 +408,20 @@ public class BigPackedOctree implements Octree.OctreeImplementation {
     }
   }
 
-  private void storeNode(DataOutputStream out, long nodeIndex) throws IOException {
+  private void storeNode(DataOutputStream out, long nodeIndex, TaskTracker.Task task) throws IOException {
+    if (size > Integer.MAX_VALUE) {
+      task.updateInterval((int) (nodeIndex >>> 32), 1<<10);
+    } else {
+      task.updateInterval((int) (nodeIndex), 1<<10);
+    }
+
     long value = getAt(nodeIndex);
     int type = value > 0 ? BRANCH_NODE : typeFromValue(value);
     out.writeInt(type);
     if(type == BRANCH_NODE) {
       for(int i = 0; i < 8; ++i) {
         long childIndex = getAt(nodeIndex) + i;
-        storeNode(out, childIndex);
+        storeNode(out, childIndex, task);
       }
     }
   }

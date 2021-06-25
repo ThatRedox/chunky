@@ -37,6 +37,7 @@ import se.llbit.chunky.plugin.PluginApi;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.world.Material;
 import se.llbit.log.Log;
+import se.llbit.util.TaskTracker;
 
 /**
  * A simple voxel Octree.
@@ -56,7 +57,7 @@ public class Octree {
   public interface OctreeImplementation {
     void set(int type, int x, int y, int z);
     Material getMaterial(int x, int y, int z, BlockPalette palette);
-    void store(DataOutputStream output) throws IOException;
+    void store(DataOutputStream output, TaskTracker.Task saveTask) throws IOException;
     int getDepth();
     long nodeCount();
     NodeId getRoot();
@@ -303,8 +304,8 @@ public class Octree {
    *
    * @throws IOException
    */
-  public void store(DataOutputStream out) throws IOException {
-    implementation.store(out);
+  public void store(DataOutputStream out, TaskTracker.Task saveTask) throws IOException {
+    implementation.store(out, saveTask);
   }
 
   /**
@@ -791,7 +792,7 @@ public class Octree {
     long nodeCount = implementation.nodeCount();
     File tempFile = File.createTempFile("octree-conversion", ".bin");
     try (DataOutputStream out = new DataOutputStream(new FastBufferedOutputStream(new FileOutputStream(tempFile)))) {
-      implementation.store(out);
+      implementation.store(out, TaskTracker.Task.NONE);
     }
     implementation = null; // Allow th gc to free memory during construction of the new octree
 

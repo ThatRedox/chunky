@@ -23,6 +23,7 @@ import se.llbit.chunky.block.UnknownBlock;
 import se.llbit.chunky.chunk.BlockPalette;
 import se.llbit.chunky.plugin.PluginApi;
 import se.llbit.chunky.world.Material;
+import se.llbit.util.TaskTracker;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -562,9 +563,10 @@ public class PackedOctree implements Octree.OctreeImplementation {
    * will be flagged as branches (can be reconstituted on load).
    */
   @Override
-  public void store(DataOutputStream output) throws IOException {
+  public void store(DataOutputStream output, TaskTracker.Task task) throws IOException {
     output.writeInt(depth);
-    storeNode(output, 0);
+    task.update(size, 0);
+    storeNode(output, 0, task);
   }
 
   @Override
@@ -618,17 +620,18 @@ public class PackedOctree implements Octree.OctreeImplementation {
   /**
    * Serialize this node and its children (recursively) to an OutputStream so it can be saved to a file.
    */
-  private void storeNode(DataOutputStream out, int nodeIndex) throws IOException {
+  private void storeNode(DataOutputStream out, int nodeIndex, TaskTracker.Task task) throws IOException {
     // Branches are stored as branch markers, not the index (index is for array form only)
     // Otherwise store its palette type (positive of stored value)
     int type = treeData[nodeIndex] > 0 ? BRANCH_NODE : -treeData[nodeIndex];
     out.writeInt(type);
+    task.updateInterval(nodeIndex, 1<<10);
 
     // And if its a branch, recursively store its children.
     // Note: this stores Depth-First, NOT Breadth-First.
     if(type == BRANCH_NODE) {
       for(int i = 0; i < 8; ++i) {
-        storeNode(out, treeData[nodeIndex] + i);
+        storeNode(out, treeData[nodeIndex] + i, task);
       }
     }
   }

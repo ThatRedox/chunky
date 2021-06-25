@@ -4,6 +4,7 @@ import org.apache.commons.math3.util.FastMath;
 import se.llbit.chunky.block.UnknownBlock;
 import se.llbit.chunky.chunk.BlockPalette;
 import se.llbit.chunky.world.Material;
+import se.llbit.util.TaskTracker;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -152,9 +153,11 @@ public class NodeBasedOctree implements Octree.OctreeImplementation {
   }
 
   @Override
-  public void store(DataOutputStream out) throws IOException {
+  public void store(DataOutputStream out, TaskTracker.Task task) throws IOException {
+    task.update(2, 1);
     out.writeInt(depth);
     root.store(out);
+    task.update(2);
   }
 
   public int getDepth() {

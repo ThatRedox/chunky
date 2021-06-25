@@ -29,6 +29,7 @@ import se.llbit.chunky.chunk.BlockPalette;
 import se.llbit.chunky.world.WorldTexture;
 import se.llbit.log.Log;
 import se.llbit.math.Octree;
+import se.llbit.util.TaskTracker;
 
 public class OctreeFileFormat {
 
@@ -123,13 +124,18 @@ public class OctreeFileFormat {
    * Save octrees and grass/foliage/water textures to a file.
    */
   public static void store(DataOutputStream out, Octree octree,
-      Octree waterTree, BlockPalette palette,
-      WorldTexture grassColors, WorldTexture foliageColors, WorldTexture waterColors)
+                           Octree waterTree, BlockPalette palette,
+                           WorldTexture grassColors, WorldTexture foliageColors, WorldTexture waterColors,
+                           TaskTracker saveTracker)
       throws IOException {
     out.writeInt(OCTREE_VERSION);
     palette.write(out);
-    octree.store(out);
-    waterTree.store(out);
+    try (TaskTracker.Task task = saveTracker.task("(1/2) Saving world octree.")) {
+      octree.store(out, task);
+    }
+    try (TaskTracker.Task task = saveTracker.task("(2/2) Saving water octree.")) {
+      waterTree.store(out, task);
+    }
     grassColors.store(out);
     foliageColors.store(out);
     waterColors.store(out);
