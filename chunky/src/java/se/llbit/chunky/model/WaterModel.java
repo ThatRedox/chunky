@@ -188,7 +188,7 @@ public class WaterModel {
           ray.t = ray.tNext;
           Vector3 n = new Vector3(quad.n);
           n.scale(-QuickMath.signum(ray.d.dot(quad.n)));
-          ray.setN(n);
+          ray.setNormal(n);
           hit = true;
         }
       }
@@ -203,7 +203,7 @@ public class WaterModel {
     if (bot.intersect(ray)) {
       Vector3 n = new Vector3(bot.n);
       n.scale(-QuickMath.signum(ray.d.dot(bot.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -216,7 +216,7 @@ public class WaterModel {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -224,7 +224,7 @@ public class WaterModel {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       ray.u = 1 - ray.u;
       ray.v = 1 - ray.v;
@@ -234,7 +234,7 @@ public class WaterModel {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -242,7 +242,7 @@ public class WaterModel {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       ray.u = 1 - ray.u;
       ray.v = 1 - ray.v;
@@ -252,7 +252,7 @@ public class WaterModel {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -260,7 +260,7 @@ public class WaterModel {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       ray.u = 1 - ray.u;
       ray.v = 1 - ray.v;
@@ -270,7 +270,7 @@ public class WaterModel {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -278,7 +278,7 @@ public class WaterModel {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       ray.u = 1 - ray.u;
       ray.v = 1 - ray.v;
@@ -288,7 +288,7 @@ public class WaterModel {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -296,7 +296,7 @@ public class WaterModel {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       ray.u = 1 - ray.u;
       ray.v = 1 - ray.v;
@@ -324,7 +324,7 @@ public class WaterModel {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -332,7 +332,7 @@ public class WaterModel {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       ray.u = 1 - ray.u;
       ray.v = 1 - ray.v;
@@ -364,6 +364,6 @@ public class WaterModel {
     n.x += normalMap[(u*normalMapW + v) * 2] / 2;
     n.z += normalMap[(u*normalMapW + v) * 2 + 1] / 2;
     n.normalize();
-    ray.setShadingN(n.x, n.y, n.z);
+    ray.setShadingNormal(n.x, n.y, n.z);
   }
 }

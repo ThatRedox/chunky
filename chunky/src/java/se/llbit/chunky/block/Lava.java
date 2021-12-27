@@ -54,7 +54,7 @@ public class Lava extends MinecraftBlockTranslucent {
     if (bottom.intersect(ray)) {
       Vector3 n = new Vector3(bottom.n);
       n.scale(-QuickMath.signum(ray.d.dot(bottom.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -67,7 +67,7 @@ public class Lava extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -75,7 +75,7 @@ public class Lava extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       ray.u = 1 - ray.u;
       ray.v = 1 - ray.v;
@@ -85,7 +85,7 @@ public class Lava extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       double y = ray.t * ray.d.y + ray.o.y;
       double z = ray.t * ray.d.z + ray.o.z;
@@ -99,7 +99,7 @@ public class Lava extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       double y = ray.t * ray.d.y + ray.o.y;
       double z = ray.t * ray.d.z + ray.o.z;
@@ -113,7 +113,7 @@ public class Lava extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       double y = ray.t * ray.d.y + ray.o.y;
       double z = ray.t * ray.d.z + ray.o.z;
@@ -127,7 +127,7 @@ public class Lava extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       double y = ray.t * ray.d.y + ray.o.y;
       double z = ray.t * ray.d.z + ray.o.z;
@@ -141,7 +141,7 @@ public class Lava extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       double x = ray.t * ray.d.x + ray.o.x;
       double y = ray.t * ray.d.y + ray.o.y;
@@ -155,7 +155,7 @@ public class Lava extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       double x = ray.t * ray.d.x + ray.o.x;
       double y = ray.t * ray.d.y + ray.o.y;
@@ -169,7 +169,7 @@ public class Lava extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       double x = ray.t * ray.d.x + ray.o.x;
       double y = ray.t * ray.d.y + ray.o.y;
@@ -183,7 +183,7 @@ public class Lava extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       double x = ray.t * ray.d.x + ray.o.x;
       double y = ray.t * ray.d.y + ray.o.y;

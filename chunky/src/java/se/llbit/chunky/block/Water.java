@@ -186,7 +186,7 @@ public class Water extends MinecraftBlockTranslucent {
           ray.t = ray.tNext;
           Vector3 n = new Vector3(quad.n);
           n.scale(-QuickMath.signum(ray.d.dot(quad.n)));
-          ray.setN(n);
+          ray.setNormal(n);
           hit = true;
         }
       }
@@ -201,7 +201,7 @@ public class Water extends MinecraftBlockTranslucent {
     if (bottom.intersect(ray)) {
       Vector3 n = new Vector3(bottom.n);
       n.scale(-QuickMath.signum(ray.d.dot(bottom.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -214,7 +214,7 @@ public class Water extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -222,7 +222,7 @@ public class Water extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       ray.u = 1 - ray.u;
       ray.v = 1 - ray.v;
@@ -232,7 +232,7 @@ public class Water extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -240,7 +240,7 @@ public class Water extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       ray.u = 1 - ray.u;
       ray.v = 1 - ray.v;
@@ -250,7 +250,7 @@ public class Water extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -258,7 +258,7 @@ public class Water extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       ray.u = 1 - ray.u;
       ray.v = 1 - ray.v;
@@ -268,7 +268,7 @@ public class Water extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -276,7 +276,7 @@ public class Water extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       ray.u = 1 - ray.u;
       ray.v = 1 - ray.v;
@@ -286,7 +286,7 @@ public class Water extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       hit = true;
     }
@@ -294,7 +294,7 @@ public class Water extends MinecraftBlockTranslucent {
     if (triangle.intersect(ray)) {
       Vector3 n = new Vector3(triangle.n);
       n.scale(-QuickMath.signum(ray.d.dot(triangle.n)));
-      ray.setN(n);
+      ray.setNormal(n);
       ray.t = ray.tNext;
       ray.u = 1 - ray.u;
       ray.v = 1 - ray.v;
