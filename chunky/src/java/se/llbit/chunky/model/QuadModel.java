@@ -4,12 +4,9 @@ import se.llbit.chunky.plugin.PluginApi;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.resources.Texture;
 import se.llbit.math.Quad;
-import se.llbit.math.QuickMath;
 import se.llbit.math.Ray;
 import se.llbit.math.Vector3;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 /**
@@ -17,7 +14,6 @@ import java.util.Random;
  */
 @PluginApi
 public abstract class QuadModel implements BlockModel {
-  private int cachedNumFaces = -1;
 
   // Epsilons to clip ray intersections to the current block.
   protected static final double E0 = -Ray.EPSILON;
@@ -63,11 +59,10 @@ public abstract class QuadModel implements BlockModel {
           tint.tint(c, ray, scene);
           color = c;
           ray.t = ray.tNext;
-          Vector3 n = new Vector3(quad.n);
-          if (quad.doubleSided) {
-            n.scale(QuickMath.signum(-ray.d.dot(quad.n)));
-          }
-          ray.setN(n);
+          if (quad.doubleSided)
+            ray.orientNormal(quad.n);
+          else
+            ray.setNormal(quad.n);
           hit = true;
         }
       }

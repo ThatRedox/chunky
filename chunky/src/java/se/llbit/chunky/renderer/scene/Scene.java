@@ -238,6 +238,7 @@ public class Scene implements JsonSerializable, Refreshable {
   protected double waterPlaneHeight = World.SEA_LEVEL;
   protected boolean waterPlaneOffsetEnabled = true;
   protected boolean waterPlaneChunkClip = true;
+  protected WaterShader waterShading = new LegacyWaterShader();
 
   /**
    * Enables fast fog algorithm
@@ -501,6 +502,7 @@ public class Scene implements JsonSerializable, Refreshable {
     waterPlaneHeight = other.waterPlaneHeight;
     waterPlaneOffsetEnabled = other.waterPlaneOffsetEnabled;
     waterPlaneChunkClip = other.waterPlaneChunkClip;
+    waterShading = other.waterShading.clone();
 
     spp = other.spp;
     renderTime = other.renderTime;
@@ -2604,6 +2606,7 @@ public class Scene implements JsonSerializable, Refreshable {
       colorObj.add("blue", waterColor.z);
       json.add("waterColor", colorObj);
     }
+    waterShading.save(json);
     JsonObject fogColorObj = new JsonObject();
     fogColorObj.add("red", fogColor.x);
     fogColorObj.add("green", fogColor.y);
@@ -2898,6 +2901,16 @@ public class Scene implements JsonSerializable, Refreshable {
       waterColor.y = colorObj.get("green").doubleValue(waterColor.y);
       waterColor.z = colorObj.get("blue").doubleValue(waterColor.z);
     }
+    String waterShader = json.get("waterShader").stringValue("LEGACY");
+    if(waterShader.equals("LEGACY"))
+      waterShading = new LegacyWaterShader();
+    else if(waterShader.equals("SIMPLEX"))
+      waterShading = new SimplexWaterShader();
+    else {
+      Log.infof("Unknown water shader %s, using LEGACY", waterShader);
+      waterShading = new LegacyWaterShader();
+    }
+    waterShading.load(json);
     JsonObject fogColorObj = json.get("fogColor").object();
     fogColor.x = fogColorObj.get("red").doubleValue(fogColor.x);
     fogColor.y = fogColorObj.get("green").doubleValue(fogColor.y);
@@ -3371,5 +3384,19 @@ public class Scene implements JsonSerializable, Refreshable {
    */
   public World getWorld() {
     return loadedWorld;
+  }
+
+  /**
+   * Get the water shader
+   */
+  public WaterShader getWaterShading() {
+    return waterShading;
+  }
+
+  /**
+   * Set the Water shader
+   */
+  public void setWaterShading(WaterShader waterShading) {
+    this.waterShading = waterShading;
   }
 }

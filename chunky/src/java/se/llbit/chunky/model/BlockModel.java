@@ -5,7 +5,6 @@ import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.math.Ray;
 import se.llbit.math.Vector3;
 
-import java.util.List;
 import java.util.Random;
 
 @PluginApi
