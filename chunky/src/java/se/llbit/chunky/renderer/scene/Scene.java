@@ -68,6 +68,9 @@ import se.llbit.chunky.renderer.postprocessing.PostProcessingFilter;
 import se.llbit.chunky.renderer.postprocessing.PostProcessingFilters;
 import se.llbit.chunky.renderer.postprocessing.PreviewFilter;
 import se.llbit.chunky.renderer.renderdump.RenderDump;
+import se.llbit.chunky.renderer.scene.renderbuffer.DoubleArrayRenderBuffer;
+import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
+import se.llbit.chunky.renderer.scene.renderbuffer.RenderPreview;
 import se.llbit.chunky.resources.BitmapImage;
 import se.llbit.chunky.resources.OctreeFileFormat;
 import se.llbit.chunky.world.biome.ArrayBiomePalette;
@@ -207,10 +210,14 @@ public class Scene implements JsonSerializable, Refreshable {
   public PostProcessingFilter postProcessingFilter = DEFAULT_POSTPROCESSING_FILTER;
   public PictureExportFormat outputMode = PictureExportFormats.PNG;
   public long renderTime;
+
   /**
    * Current SPP for the scene.
+   * @deprecated Remove in 2.6
    */
+  @Deprecated
   public int spp = 0;
+
   protected double exposure = DEFAULT_EXPOSURE;
   /**
    * Target SPP for the scene.
@@ -341,7 +348,7 @@ public class Scene implements JsonSerializable, Refreshable {
    * should really be moved somewhere else and not be so tightly
    * coupled to the scene settings.
    */
-  protected double[] samples;
+  protected RenderBuffer samples;
 
   private byte[] alphaChannel;
 
@@ -428,7 +435,7 @@ public class Scene implements JsonSerializable, Refreshable {
     frontBuffer = new BitmapImage(width, height);
     backBuffer = new BitmapImage(width, height);
     alphaChannel = new byte[width * height];
-    samples = new double[width * height * 3];
+    samples = new DoubleArrayRenderBuffer(width, height);
   }
 
   /**
@@ -2095,7 +2102,8 @@ public class Scene implements JsonSerializable, Refreshable {
     if(mode == RenderMode.PREVIEW) {
       filter = PreviewFilter.INSTANCE;
     }
-    filter.processFrame(width, height, samples, backBuffer, exposure, task);
+    RenderPreview preview = getRenderBuffer().getPreview();
+    filter.processFrame(preview.getWidth(), preview.getHeight(), preview.getPreview(), backBuffer, exposure, task);
     finalized = true;
   }
 
@@ -2323,13 +2331,6 @@ public class Scene implements JsonSerializable, Refreshable {
   }
 
   /**
-   * Copies a pixel in-buffer.
-   */
-  public void copyPixel(int jobId, int offset) {
-    System.arraycopy(samples, jobId * 3, samples, (jobId + offset) * 3, 3);
-  }
-
-  /**
    * @return scene status text.
    */
   public synchronized String sceneStatus() {
@@ -2394,8 +2395,21 @@ public class Scene implements JsonSerializable, Refreshable {
    * Get direct access to the sample buffer.
    *
    * @return The sample buffer for this scene
+   * @deprecated See {@link #getRenderBuffer()}. Remove in 2.6
    */
+  @Deprecated
   public double[] getSampleBuffer() {
+    if (samples instanceof DoubleArrayRenderBuffer) {
+      return ((DoubleArrayRenderBuffer) samples).getSampleBuffer();
+    } else {
+      throw new RuntimeException("Attempted to use deprecated API to access raw sample buffer on non-legacy sample buffer.");
+    }
+  }
+
+  /**
+   * Get access to the render buffer.
+   */
+  public RenderBuffer getRenderBuffer() {
     return samples;
   }
 

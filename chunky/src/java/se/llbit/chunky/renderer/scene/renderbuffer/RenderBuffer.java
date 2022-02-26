@@ -29,4 +29,16 @@ public interface RenderBuffer extends Registerable {
      * Get the height of this buffer.
      */
     long getHeight();
+
+    /**
+     * Set the preferred preview resolution.
+     * @param perfWidth  preferred width
+     * @param perfHeight preferred height
+     */
+    void setPreviewResolution(long perfWidth, long perfHeight);
+
+    /**
+     * Get the render preview.
+     */
+    RenderPreview getPreview();
 }

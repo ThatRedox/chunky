@@ -89,6 +89,23 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
         }
     }
 
+    public class Preview implements RenderPreview {
+        @Override
+        public long getWidth() {
+            return width;
+        }
+
+        @Override
+        public long getHeight() {
+            return height;
+        }
+
+        @Override
+        public double[] getPreview() {
+            return samples;
+        }
+    }
+
     public DoubleArrayRenderBuffer(long width, long height) {
         int bufferLength = Math.toIntExact(3 * width * height);
 
@@ -114,6 +131,16 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
     }
 
     @Override
+    public void setPreviewResolution(long perfWidth, long perfHeight) {
+        // Does nothing right now
+    }
+
+    @Override
+    public RenderPreview getPreview() {
+        return new Preview();
+    }
+
+    @Override
     public String getName() {
         return "Double Array Render Buffer";
     }
@@ -126,5 +153,10 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
     @Override
     public String getId() {
         return "DoubleArrayRenderBuffer";
+    }
+    
+    @Deprecated
+    public double[] getSampleBuffer() {
+        return samples;
     }
 }
