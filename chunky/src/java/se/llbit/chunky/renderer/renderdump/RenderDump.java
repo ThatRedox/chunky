@@ -54,9 +54,9 @@ public class RenderDump {
   static {
     RenderDump.addRenderDumpFormat(ClassicDumpFormat.INSTANCE);                 // 0
     RenderDump.addRenderDumpFormat(FloatingPointCompressorDumpFormat.INSTANCE); // 1
-    RenderDump.addRenderDumpFormat(UncompressedDumpFormat.INSTANCE);            // 2
-    RenderDump.addRenderDumpFormat(HuffmanDumpFormat.INSTANCE);                 // 3
-    RenderDump.addRenderDumpFormat(GzipDumpFormat.INSTANCE);                    // 4
+    RenderDump.addRenderDumpFormat(LegacyStreamDumpFormat.UNCOMPRESSED);        // 2
+    RenderDump.addRenderDumpFormat(LegacyStreamDumpFormat.HUFFMAN);             // 3
+    RenderDump.addRenderDumpFormat(LegacyStreamDumpFormat.GZIP);                // 4
   }
 
   private static DumpFormat getDumpFormat(int version) {

@@ -5,8 +5,13 @@ import se.llbit.util.Registerable;
 import java.util.concurrent.Future;
 
 public interface RenderBuffer extends Registerable {
+    /**
+     * The preferred tile size.
+     */
+    int TILE_SIZE = 128;
+
     interface Factory {
-        RenderBuffer create(long width, long height);
+        RenderBuffer create(int width, int height);
     }
 
     /**
@@ -18,24 +23,24 @@ public interface RenderBuffer extends Registerable {
      * @param height    Tile height
      * @return Future which will resolve to the tile
      */
-    Future<RenderTile> getTile(long x, long y, long width, long height);
+    Future<RenderTile> getTile(int x, int y, int width, int height);
 
     /**
      * Get the width of this buffer.
      */
-    long getWidth();
+    int getWidth();
 
     /**
      * Get the height of this buffer.
      */
-    long getHeight();
+    int getHeight();
 
     /**
      * Set the preferred preview resolution.
      * @param perfWidth  preferred width
      * @param perfHeight preferred height
      */
-    void setPreviewResolution(long perfWidth, long perfHeight);
+    void setPreviewResolution(int perfWidth, int perfHeight);
 
     /**
      * Get the render preview.

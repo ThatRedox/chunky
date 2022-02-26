@@ -17,8 +17,10 @@
 package se.llbit.chunky.renderer.renderdump;
 
 import se.llbit.chunky.renderer.scene.Scene;
+import se.llbit.math.Vector3;
 
 import java.io.*;
+import java.util.Iterator;
 import java.util.function.IntConsumer;
 
 /**
@@ -26,7 +28,7 @@ import java.util.function.IntConsumer;
  * (compression algorithm for double precision floating pointer number)
  * http://cs.txstate.edu/~burtscher/papers/tr06.pdf
  */
-public class FloatingPointCompressorDumpFormat extends AbstractDumpFormat {
+public class FloatingPointCompressorDumpFormat extends LegacyAbstractDumpFormat {
   public static final FloatingPointCompressorDumpFormat INSTANCE = new FloatingPointCompressorDumpFormat();
 
   private FloatingPointCompressorDumpFormat() {}
@@ -60,32 +62,37 @@ public class FloatingPointCompressorDumpFormat extends AbstractDumpFormat {
 
   @Override
   protected void writeSamples(DataOutputStream outputStream, Scene scene,
-                              IntConsumer pixelProgress)
+                              Iterable<Pixel> pixels, IntConsumer pixelProgress)
       throws IOException {
-    double[] samples = scene.getSampleBuffer();
-    assert samples.length % 3 == 0;
+    Vector3 firstColor = new Vector3();
+    Vector3 secondColor = new Vector3();
+    Iterator<Pixel> iterator = pixels.iterator();
 
-    int pixels = samples.length / 3;
-    int size = pixels - 1;
+    int size = scene.width * scene.height - 1;
 
     EncoderDecoder rEncoder = new EncoderDecoder();
     EncoderDecoder gEncoder = new EncoderDecoder();
     EncoderDecoder bEncoder = new EncoderDecoder();
 
     for (int i = 0; i < size; i += 2) {
-      int idx = 3 * i;
-      rEncoder.encodePair(samples[idx], samples[idx + 3], outputStream);
-      gEncoder.encodePair(samples[idx + 1], samples[idx + 4], outputStream);
-      bEncoder.encodePair(samples[idx + 2], samples[idx + 5], outputStream);
+      iterator.next().getColor(firstColor);
+      iterator.next().getColor(secondColor);
+
+      rEncoder.encodePair(firstColor.x, secondColor.x, outputStream);
+      gEncoder.encodePair(firstColor.y, secondColor.y, outputStream);
+      bEncoder.encodePair(firstColor.z, secondColor.z, outputStream);
+
       pixelProgress.accept(i);
     }
 
     // Add the last one and a special terminator if there is an odd number
-    if (pixels % 2 == 1) {
-      int idx = 3 * size;
-      rEncoder.encodeSingleWithOddTerminator(samples[idx], outputStream);
-      gEncoder.encodeSingleWithOddTerminator(samples[idx + 1], outputStream);
-      bEncoder.encodeSingleWithOddTerminator(samples[idx + 2], outputStream);
+    if (iterator.hasNext()) {
+      iterator.next().getColor(firstColor);
+
+      rEncoder.encodeSingleWithOddTerminator(firstColor.x, outputStream);
+      gEncoder.encodeSingleWithOddTerminator(firstColor.y, outputStream);
+      bEncoder.encodeSingleWithOddTerminator(firstColor.z, outputStream);
+
       pixelProgress.accept(size);
     }
   }

@@ -23,23 +23,8 @@ public interface PostProcessingFilter {
    * @param output The output image
    * @param exposure The exposure value
    * @param task Task
-   * @deprecated See {@link #processFrame(long, long, double[], BitmapImage, double, TaskTracker.Task)}. Remove in 2.6
    */
-  @Deprecated
   void processFrame(int width, int height, double[] input, BitmapImage output, double exposure, TaskTracker.Task task);
-
-  /**
-   * Post process the entire frame
-   * @param width The width of the image
-   * @param height The height of the image
-   * @param input The input linear image as double array, exposure has not been applied
-   * @param output The output image
-   * @param exposure The exposure value
-   * @param task Task
-   */
-  default void processFrame(long width, long height, double[] input, BitmapImage output, double exposure, TaskTracker.Task task) {
-    processFrame(Math.toIntExact(width), Math.toIntExact(height), input, output, exposure, task);
-  }
 
   /**
    * Get name of the post processing filter

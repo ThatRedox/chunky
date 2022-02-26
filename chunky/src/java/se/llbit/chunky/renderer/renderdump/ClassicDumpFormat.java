@@ -17,13 +17,18 @@
 package se.llbit.chunky.renderer.renderdump;
 
 import se.llbit.chunky.renderer.scene.Scene;
+import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
+import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
+import se.llbit.math.Vector3;
 import se.llbit.util.IsolatedOutputStream;
 import se.llbit.util.TaskTracker;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.function.IntConsumer;
+import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -32,11 +37,75 @@ import java.util.zip.GZIPOutputStream;
  * <p>
  * The format is a GZIP stream containing some canvas information followed by the render dump
  * written in column major order.
- * <p>
- * Note: Despite implementing {@code DumpFormat}, it does not use the Chunky render dump container format.
  */
-public class ClassicDumpFormat extends AbstractDumpFormat {
+public class ClassicDumpFormat implements DumpFormat {
   public static final ClassicDumpFormat INSTANCE = new ClassicDumpFormat();
+
+  public static class BufferIterator implements Iterator<LegacyAbstractDumpFormat.Pixel> {
+    protected final RenderBuffer buffer;
+    protected final LegacyAbstractDumpFormat.Pixel pixel;
+
+    protected final int tileWidth;
+    protected final int tileHeight;
+
+    protected int currentX;
+    protected Future<RenderTile> tileFuture;
+    protected RenderTile tile;
+
+    public BufferIterator(RenderBuffer buffer) {
+      this.buffer = buffer;
+
+      tileWidth = Math.min(LegacyAbstractDumpFormat.MIN_PIXELS_PER_TILE / buffer.getHeight() + 1, buffer.getWidth());
+      tileHeight = buffer.getHeight();
+
+      currentX = 0;
+      tileFuture = null;
+      nextTile();
+      nextTile();
+
+      pixel = new LegacyAbstractDumpFormat.Pixel(0, 0, buffer.getWidth(), tile);
+    }
+
+    private void nextTile() {
+      try {
+        if (tileFuture != null) {
+          tile = tileFuture.get();
+        }
+
+        int w = tileWidth;
+        if (w + currentX >= buffer.getWidth()) {
+          w = buffer.getWidth() - currentX;
+        }
+        tileFuture = buffer.getTile(currentX, 0, w, tileHeight);
+        currentX += w;
+      } catch (InterruptedException | ExecutionException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @Override
+    public LegacyAbstractDumpFormat.Pixel next() {
+      int pixelX = pixel.x;
+      int pixelY = pixel.y + 1;
+
+      if (pixelY >= buffer.getHeight()) {
+        pixelY = 0;
+        pixelX += 1;
+      }
+      if (pixelX >= tile.getTileWidth()) {
+        pixelX = 0;
+        nextTile();
+      }
+
+      pixel.setPixel(pixelX, pixelY, tile);
+      return pixel;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return pixel.getY() + 1 < buffer.getHeight() || pixel.getX() + 1 < buffer.getWidth();
+    }
+  }
 
   private ClassicDumpFormat() {}
 
@@ -61,64 +130,68 @@ public class ClassicDumpFormat extends AbstractDumpFormat {
   }
 
   @Override
-  protected void readSamples(DataInputStream inputStream, Scene scene,
-                             PixelConsumer consumer, IntConsumer pixelProgress)
-      throws IOException {
-    int pixelIndex;
-    int done = 0;
-    double r, g, b;
-
-    // Warning: This format writes in column major order
-    for (int x = 0; x < scene.width; x++) {
-      for (int y = 0; y < scene.height; y++) {
-        pixelIndex = (y * scene.width + x);
-        r = inputStream.readDouble();
-        g = inputStream.readDouble();
-        b = inputStream.readDouble();
-        consumer.consume(pixelIndex, r, g, b);
-        pixelProgress.accept(done++);
-      }
-    }
-  }
-
-  @Override
-  protected void writeSamples(DataOutputStream outputStream, Scene scene,
-                              IntConsumer pixelProgress)
-      throws IOException {
-    double[] samples = scene.getSampleBuffer();
-    int offset;
-    int done = 0;
-
-    // Warning: This format writes in column major order
-    for (int x = 0; x < scene.width; ++x) {
-      for (int y = 0; y < scene.height; ++y) {
-        offset = (y * scene.width + x) * 3;
-        outputStream.writeDouble(samples[offset + 0]);
-        outputStream.writeDouble(samples[offset + 1]);
-        outputStream.writeDouble(samples[offset + 2]);
-        pixelProgress.accept(done++);
-      }
-    }
-  }
-
-  @Override
   public void load(DataInputStream inputStream, Scene scene, TaskTracker taskTracker)
       throws IOException, IllegalStateException {
-    DataInputStream stream = new DataInputStream(new GZIPInputStream(inputStream));
-    super.load(stream, scene, taskTracker);
+    DataInputStream in = new DataInputStream(new GZIPInputStream(inputStream));
+    try (TaskTracker.Task task = taskTracker.task("Loading render dump", scene.width * scene.height)) {
+      int spp = LegacyStreamDumpFormat.readHeader(in, scene);
+
+      int done = 0;
+      Iterator<LegacyAbstractDumpFormat.Pixel> iterator = new BufferIterator(scene.getRenderBuffer());
+      while (iterator.hasNext()) {
+        iterator.next().set(
+            in.readDouble(),
+            in.readDouble(),
+            in.readDouble(),
+            spp
+        );
+
+        task.updateInterval(done++, scene.height);
+      }
+    }
   }
 
   @Override
   public void save(DataOutputStream outputStream, Scene scene, TaskTracker taskTracker) throws IOException {
-    try (DataOutputStream stream = new DataOutputStream(new GZIPOutputStream(new IsolatedOutputStream(outputStream)))) {
-      super.save(stream, scene, taskTracker);
+    try (DataOutputStream out = new DataOutputStream(new GZIPOutputStream(new IsolatedOutputStream(outputStream)))) {
+      try (TaskTracker.Task task = taskTracker.task("Saving render dump", scene.width * scene.height)) {
+        LegacyAbstractDumpFormat.writeHeader(outputStream, scene);
+
+        int done = 0;
+        Vector3 color = new Vector3();
+        Iterator<LegacyAbstractDumpFormat.Pixel> iterator = new BufferIterator(scene.getRenderBuffer());
+        while (iterator.hasNext()) {
+          iterator.next().getColor(color);
+
+          out.writeDouble(color.x);
+          out.writeDouble(color.y);
+          out.writeDouble(color.z);
+
+          task.updateInterval(done++, scene.height);
+        }
+      }
     }
   }
 
   @Override
   public void merge(DataInputStream inputStream, Scene scene, TaskTracker taskTracker)
       throws IOException, IllegalStateException {
-    DataInputStream stream = new DataInputStream(new GZIPInputStream(inputStream));
-    super.merge(stream, scene, taskTracker);
+    DataInputStream in = new DataInputStream(new GZIPInputStream(inputStream));
+    try (TaskTracker.Task task = taskTracker.task("Merging render dump", scene.width * scene.height)) {
+      int spp = LegacyStreamDumpFormat.readHeader(in, scene);
+
+      int done = 0;
+      Iterator<LegacyAbstractDumpFormat.Pixel> iterator = new BufferIterator(scene.getRenderBuffer());
+      while (iterator.hasNext()) {
+        iterator.next().merge(
+            in.readDouble(),
+            in.readDouble(),
+            in.readDouble(),
+            spp
+        );
+
+        task.updateInterval(done++, scene.height);
+      }
+    }
   }
 }

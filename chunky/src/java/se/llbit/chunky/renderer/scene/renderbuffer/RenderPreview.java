@@ -4,12 +4,12 @@ public interface RenderPreview {
     /**
      * Get the real width of the render preview.
      */
-    long getWidth();
+    int getWidth();
 
     /**
      * Get the real height of the render preview.
      */
-    long getHeight();
+    int getHeight();
 
     /**
      * Get the double array backing the render preview.

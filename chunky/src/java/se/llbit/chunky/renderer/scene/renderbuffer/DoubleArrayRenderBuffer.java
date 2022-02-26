@@ -9,28 +9,28 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
     private final double[] samples;
     private final int[] spp;
 
-    private final long width;
-    private final long height;
+    private final int width;
+    private final int height;
 
     public class Tile implements RenderTile {
-        private final long xOffset;
-        private final long yOffset;
-        private final long tileWidth;
-        private final long tileHeight;
+        private final int xOffset;
+        private final int yOffset;
+        private final int tileWidth;
+        private final int tileHeight;
 
-        protected Tile(long xOffset, long yOffset, long tileWidth, long tileHeight) {
+        protected Tile(int xOffset, int yOffset, int tileWidth, int tileHeight) {
             this.xOffset = xOffset;
             this.yOffset = yOffset;
             this.tileWidth = tileWidth;
             this.tileHeight = tileHeight;
         }
 
-        private int getIndex(long x, long y) {
+        private int getIndex(int x, int y) {
             return Math.toIntExact(getBufferX(x) + getBufferY(y) * width);
         }
 
         @Override
-        public int getColor(long x, long y, Vector3 color) {
+        public int getColor(int x, int y, Vector3 color) {
             int i = getIndex(x, y);
             color.x = samples[i*3 + 0];
             color.y = samples[i*3 + 1];
@@ -39,7 +39,7 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
         }
 
         @Override
-        public void mergeColor(long x, long y, double r, double g, double b, int s) {
+        public void mergeColor(int x, int y, double r, double g, double b, int s) {
             int i = getIndex(x, y);
             int baseSpp = spp[i];
             double sinv = 1.0 / (baseSpp + s);
@@ -50,7 +50,7 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
         }
 
         @Override
-        public void setPixel(long x, long y, double r, double g, double b, int s) {
+        public void setPixel(int x, int y, double r, double g, double b, int s) {
             int i = getIndex(x, y);
             samples[i*3 + 0] = r;
             samples[i*3 + 1] = g;
@@ -59,44 +59,44 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
         }
 
         @Override
-        public long getBufferX(long x) {
+        public int getBufferX(int x) {
             return x + xOffset;
         }
 
         @Override
-        public long getBufferY(long y) {
+        public int getBufferY(int y) {
             return y + yOffset;
         }
 
         @Override
-        public long getBufferWidth() {
+        public int getBufferWidth() {
             return width;
         }
 
         @Override
-        public long getBufferHeight() {
+        public int getBufferHeight() {
             return height;
         }
 
         @Override
-        public long getTileWidth() {
+        public int getTileWidth() {
             return tileWidth;
         }
 
         @Override
-        public long getTileHeight() {
+        public int getTileHeight() {
             return tileHeight;
         }
     }
 
     public class Preview implements RenderPreview {
         @Override
-        public long getWidth() {
+        public int getWidth() {
             return width;
         }
 
         @Override
-        public long getHeight() {
+        public int getHeight() {
             return height;
         }
 
@@ -106,7 +106,7 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
         }
     }
 
-    public DoubleArrayRenderBuffer(long width, long height) {
+    public DoubleArrayRenderBuffer(int width, int height) {
         int bufferLength = Math.toIntExact(3 * width * height);
 
         this.width = width;
@@ -116,22 +116,22 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
     }
 
     @Override
-    public Future<RenderTile> getTile(long x, long y, long width, long height) {
+    public Future<RenderTile> getTile(int x, int y, int width, int height) {
         return CompletableFuture.completedFuture(new Tile(x, y, width, height));
     }
 
     @Override
-    public long getWidth() {
+    public int getWidth() {
         return width;
     }
 
     @Override
-    public long getHeight() {
+    public int getHeight() {
         return height;
     }
 
     @Override
-    public void setPreviewResolution(long perfWidth, long perfHeight) {
+    public void setPreviewResolution(int perfWidth, int perfHeight) {
         // Does nothing right now
     }
 
