@@ -3,6 +3,7 @@ package se.llbit.chunky.renderer.renderdump;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
+import se.llbit.log.Log;
 import se.llbit.math.Vector3;
 import se.llbit.util.IsolatedOutputStream;
 import se.llbit.util.TaskTracker;
@@ -94,7 +95,7 @@ public class TiledStreamDumpFormat extends AbstractTiledDumpFormat {
             }
 
             // Update progress (int cast should fail at about 35 trillion pixels, so it's fine for now)
-            progress.update((int) (numTiles++), (int) tilesComplete);
+            progress.update((int) numTiles, (int) (tilesComplete++));
         }
     }
 
@@ -137,7 +138,11 @@ public class TiledStreamDumpFormat extends AbstractTiledDumpFormat {
                 }
 
                 // Update progress (int cast should fail at about 35 trillion pixels, so it's fine for now)
-                progress.update((int) (numTiles++), (int) tilesComplete);
+                progress.update((int) numTiles, (int) (tilesComplete++));
+            }
+
+            if (numTiles != tilesComplete) {
+                Log.errorf("Not all tiles written. %d / %d written.", tilesComplete, numTiles);
             }
         }
     }

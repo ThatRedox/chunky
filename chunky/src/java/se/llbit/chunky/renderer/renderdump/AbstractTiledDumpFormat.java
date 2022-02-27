@@ -4,7 +4,6 @@ import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
 import se.llbit.util.TaskTracker;
-import sun.plugin.dom.exception.InvalidStateException;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -32,7 +31,12 @@ public abstract class AbstractTiledDumpFormat implements DumpFormat {
         }
 
         public long numTiles() {
-            return (buffer.getHeight() / tileSize + 1L) * (buffer.getWidth() / tileSize + 1L);
+            long tilesV = buffer.getHeight() / tileSize;
+            if (buffer.getHeight() % tileSize != 0) tilesV++;
+            long tilesH = buffer.getWidth() / tileSize;
+            if (buffer.getWidth() % tileSize != 0) tilesH++;
+
+            return tilesV * tilesH;
         }
 
         @Override
@@ -44,22 +48,24 @@ public abstract class AbstractTiledDumpFormat implements DumpFormat {
                 private Future<RenderTile> tileFuture = nextTile();
 
                 private Future<RenderTile> nextTile() {
+                    int tileW = Math.min(TILE_SIZE, buffer.getWidth() - x);
+                    int tileH = Math.min(TILE_SIZE, buffer.getHeight() - y);
+                    if (y >= buffer.getHeight()) {
+                        return null;
+                    }
+                    Future<RenderTile> tile = buffer.getTile(x, y, tileW, tileH);
+
                     x += TILE_SIZE;
                     if (x >= buffer.getWidth()) {
                         x = 0;
                         y += TILE_SIZE;
                     }
-                    if (y >= buffer.getHeight()) {
-                        return null;
-                    }
-                    int tileW = Math.min(TILE_SIZE, buffer.getWidth() - x);
-                    int tileH = Math.min(TILE_SIZE, buffer.getHeight() - y);
-                    return buffer.getTile(x, y, tileW, tileH);
+                    return tile;
                 }
 
                 @Override
                 public boolean hasNext() {
-                    return (x + TILE_SIZE >= buffer.getWidth()) && (y + TILE_SIZE >= buffer.getHeight());
+                    return tileFuture != null;
                 }
 
                 @Override
@@ -73,7 +79,7 @@ public abstract class AbstractTiledDumpFormat implements DumpFormat {
                             throw new RuntimeException(e);
                         }
                     } else {
-                        throw new InvalidStateException("Attempted to iterate past the end of the tile iterator.");
+                        throw new IllegalStateException("Attempted to iterate past the end of the tile iterator.");
                     }
                 }
             };
