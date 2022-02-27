@@ -1,6 +1,7 @@
 package se.llbit.chunky.renderer.scene.renderbuffer;
 
 import se.llbit.math.Vector3;
+import se.llbit.util.annotation.Nullable;
 
 public interface RenderTile {
     /**
@@ -10,7 +11,7 @@ public interface RenderTile {
      * @param color Color is returned in this Vector
      * @return Number of samples
      */
-    int getColor(int x, int y, Vector3 color);
+    int getColor(int x, int y, @Nullable Vector3 color);
 
     /**
      * Merge samples into a pixel.

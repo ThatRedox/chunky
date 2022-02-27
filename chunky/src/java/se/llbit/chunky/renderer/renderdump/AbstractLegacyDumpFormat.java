@@ -32,7 +32,11 @@ import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 
 
-abstract class LegacyAbstractDumpFormat implements DumpFormat {
+/**
+ * This is the legacy dump format for 2.2 < Chunky <= 2.4.2
+ * This stores the samples in a row major order.
+ */
+abstract class AbstractLegacyDumpFormat implements DumpFormat {
   /**
    * Aim for at least 65,536 pixels per tile
    */

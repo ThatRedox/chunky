@@ -9,7 +9,7 @@ import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.zip.*;
 
-public class LegacyStreamDumpFormat extends LegacyAbstractDumpFormat {
+public class LegacyStreamDumpFormat extends AbstractLegacyDumpFormat {
     public static final LegacyStreamDumpFormat UNCOMPRESSED = new LegacyStreamDumpFormat(2,
         is -> is, os -> os,
         "Legacy Uncompressed Dump", "Legacy uncompressed dump format.", "LegacyUncompressedDumpFormat");

@@ -41,9 +41,9 @@ import java.util.zip.GZIPOutputStream;
 public class ClassicDumpFormat implements DumpFormat {
   public static final ClassicDumpFormat INSTANCE = new ClassicDumpFormat();
 
-  public static class BufferIterator implements Iterator<LegacyAbstractDumpFormat.Pixel> {
+  public static class BufferIterator implements Iterator<AbstractLegacyDumpFormat.Pixel> {
     protected final RenderBuffer buffer;
-    protected final LegacyAbstractDumpFormat.Pixel pixel;
+    protected final AbstractLegacyDumpFormat.Pixel pixel;
 
     protected final int tileWidth;
     protected final int tileHeight;
@@ -55,7 +55,7 @@ public class ClassicDumpFormat implements DumpFormat {
     public BufferIterator(RenderBuffer buffer) {
       this.buffer = buffer;
 
-      tileWidth = Math.min(LegacyAbstractDumpFormat.MIN_PIXELS_PER_TILE / buffer.getHeight() + 1, buffer.getWidth());
+      tileWidth = Math.min(AbstractLegacyDumpFormat.MIN_PIXELS_PER_TILE / buffer.getHeight() + 1, buffer.getWidth());
       tileHeight = buffer.getHeight();
 
       currentX = 0;
@@ -63,7 +63,7 @@ public class ClassicDumpFormat implements DumpFormat {
       nextTile();
       nextTile();
 
-      pixel = new LegacyAbstractDumpFormat.Pixel(0, 0, buffer.getWidth(), tile);
+      pixel = new AbstractLegacyDumpFormat.Pixel(0, 0, buffer.getWidth(), tile);
     }
 
     private void nextTile() {
@@ -84,7 +84,7 @@ public class ClassicDumpFormat implements DumpFormat {
     }
 
     @Override
-    public LegacyAbstractDumpFormat.Pixel next() {
+    public AbstractLegacyDumpFormat.Pixel next() {
       int pixelX = pixel.x;
       int pixelY = pixel.y + 1;
 
@@ -137,7 +137,7 @@ public class ClassicDumpFormat implements DumpFormat {
       int spp = LegacyStreamDumpFormat.readHeader(in, scene);
 
       int done = 0;
-      Iterator<LegacyAbstractDumpFormat.Pixel> iterator = new BufferIterator(scene.getRenderBuffer());
+      Iterator<AbstractLegacyDumpFormat.Pixel> iterator = new BufferIterator(scene.getRenderBuffer());
       while (iterator.hasNext()) {
         iterator.next().set(
             in.readDouble(),
@@ -155,11 +155,11 @@ public class ClassicDumpFormat implements DumpFormat {
   public void save(DataOutputStream outputStream, Scene scene, TaskTracker taskTracker) throws IOException {
     try (DataOutputStream out = new DataOutputStream(new GZIPOutputStream(new IsolatedOutputStream(outputStream)))) {
       try (TaskTracker.Task task = taskTracker.task("Saving render dump", scene.width * scene.height)) {
-        LegacyAbstractDumpFormat.writeHeader(outputStream, scene);
+        AbstractLegacyDumpFormat.writeHeader(outputStream, scene);
 
         int done = 0;
         Vector3 color = new Vector3();
-        Iterator<LegacyAbstractDumpFormat.Pixel> iterator = new BufferIterator(scene.getRenderBuffer());
+        Iterator<AbstractLegacyDumpFormat.Pixel> iterator = new BufferIterator(scene.getRenderBuffer());
         while (iterator.hasNext()) {
           iterator.next().getColor(color);
 
@@ -181,7 +181,7 @@ public class ClassicDumpFormat implements DumpFormat {
       int spp = LegacyStreamDumpFormat.readHeader(in, scene);
 
       int done = 0;
-      Iterator<LegacyAbstractDumpFormat.Pixel> iterator = new BufferIterator(scene.getRenderBuffer());
+      Iterator<AbstractLegacyDumpFormat.Pixel> iterator = new BufferIterator(scene.getRenderBuffer());
       while (iterator.hasNext()) {
         iterator.next().merge(
             in.readDouble(),

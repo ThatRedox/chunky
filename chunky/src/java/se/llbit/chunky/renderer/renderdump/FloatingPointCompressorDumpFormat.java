@@ -28,7 +28,7 @@ import java.util.function.IntConsumer;
  * (compression algorithm for double precision floating pointer number)
  * http://cs.txstate.edu/~burtscher/papers/tr06.pdf
  */
-public class FloatingPointCompressorDumpFormat extends LegacyAbstractDumpFormat {
+public class FloatingPointCompressorDumpFormat extends AbstractLegacyDumpFormat {
   public static final FloatingPointCompressorDumpFormat INSTANCE = new FloatingPointCompressorDumpFormat();
 
   private FloatingPointCompressorDumpFormat() {}

@@ -37,7 +37,7 @@ import java.util.HashMap;
  */
 public class RenderDump {
   public static final byte[] DUMP_FORMAT_MAGIC_NUMBER = {0x44, 0x55, 0x4D, 0x50};
-  private static final int DEFAULT_DUMP_FORMAT = 1;  // FPC compressor
+  private static final int DEFAULT_DUMP_FORMAT = 8;  // TODO: Use a compressed output
 
   private static final HashMap<Integer, DumpFormat> RENDER_DUMP_FORMATS = new HashMap<>();
 
@@ -53,10 +53,13 @@ public class RenderDump {
 
   static {
     RenderDump.addRenderDumpFormat(ClassicDumpFormat.INSTANCE);                 // 0
+
     RenderDump.addRenderDumpFormat(FloatingPointCompressorDumpFormat.INSTANCE); // 1
     RenderDump.addRenderDumpFormat(LegacyStreamDumpFormat.UNCOMPRESSED);        // 2
     RenderDump.addRenderDumpFormat(LegacyStreamDumpFormat.HUFFMAN);             // 3
     RenderDump.addRenderDumpFormat(LegacyStreamDumpFormat.GZIP);                // 4
+
+    RenderDump.addRenderDumpFormat(TiledStreamDumpFormat.UNCOMPRESSED);         // 8
   }
 
   private static DumpFormat getDumpFormat(int version) {

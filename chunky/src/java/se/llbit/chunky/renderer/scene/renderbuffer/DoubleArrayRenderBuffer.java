@@ -32,6 +32,10 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
         @Override
         public int getColor(int x, int y, Vector3 color) {
             int i = getIndex(x, y);
+            if (color == null) {
+                return spp[i];
+            }
+
             color.x = samples[i*3 + 0];
             color.y = samples[i*3 + 1];
             color.z = samples[i*3 + 2];
