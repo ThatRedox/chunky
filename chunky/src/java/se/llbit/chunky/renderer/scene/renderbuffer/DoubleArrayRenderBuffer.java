@@ -63,6 +63,11 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
         }
 
         @Override
+        public void commit() {
+            // Nothing needs to be done here
+        }
+
+        @Override
         public int getBufferX(int x) {
             return x + xOffset;
         }

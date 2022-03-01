@@ -47,6 +47,11 @@ public interface RenderTile {
     void setPixel(int x, int y, double r, double g, double b, int s);
 
     /**
+     * Commit the changes made to this tile.
+     */
+    void commit();
+
+    /**
      * Get the buffer coordinates of a pixel.
      * @param x Tile x
      * @return  Buffer x
