@@ -51,6 +51,7 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
             samples[i*3 + 0] = (samples[i*3 + 0]*baseSpp + r*s) * sinv;
             samples[i*3 + 1] = (samples[i*3 + 1]*baseSpp + g*s) * sinv;
             samples[i*3 + 2] = (samples[i*3 + 2]*baseSpp + b*s) * sinv;
+            spp[i] = baseSpp + s;
         }
 
         @Override

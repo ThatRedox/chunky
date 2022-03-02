@@ -19,6 +19,9 @@ package se.llbit.chunky.renderer.renderdump;
 import org.junit.Before;
 import org.junit.Test;
 import se.llbit.chunky.renderer.scene.Scene;
+import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
+import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
+import se.llbit.math.Vector3;
 import se.llbit.util.ProgressListener;
 import se.llbit.util.TaskTracker;
 
@@ -80,10 +83,9 @@ public class RenderDumpTest {
     });
   }
 
-  protected Scene createTestScene(int width, int height, int spp, long renderTime) {
+  protected Scene createTestScene(long renderTime) {
     Scene scene = new Scene();
-    scene.setCanvasSize(width, height);
-    scene.spp = spp;
+    scene.setCanvasSize(testWidth, testWidth);
     scene.renderTime = renderTime;
     return scene;
   }
@@ -95,63 +97,99 @@ public class RenderDumpTest {
   }
 
   @Test
-  public void testLoadClassicFormatDump() throws IOException {
+  public void testLoadClassicFormatDump() throws Exception {
     testLoadDump("classicFormatDump");
   }
 
   @Test
-  public void testLoadCompressedFloatFormatDump() throws IOException {
+  public void testLoadCompressedFloatFormatDump() throws Exception {
     testLoadDump("compressedFloatFormatDump");
   }
 
-  private void testLoadDump(String dumpName) throws IOException {
-    Scene scene = createTestScene(testWidth, testHeight, 0, 0);
+  private void testLoadDump(String dumpName) throws Exception {
+    Scene scene = createTestScene(0);
     ByteArrayInputStream inputStream = new ByteArrayInputStream(getTestDump(dumpName));
     RenderDump.load(inputStream, scene, taskTracker);
     assertArrayEquals(testSampleBuffer, scene.getSampleBuffer(), 0.0);
-    assertEquals(testSPP, scene.spp);
     assertEquals(testRenderTime, scene.renderTime);
+
+    RenderTile tile = scene.getRenderBuffer().getTile(0, 0, testWidth, testHeight).get();
+    for (int x = 0; x < testWidth; x++) {
+      for (int y = 0; y < testHeight; y++) {
+        assertEquals(testSPP, tile.getColor(x, y, null));
+      }
+    }
   }
 
   @Test
-  public void testMergeClassicFormatDump() throws IOException {
+  public void testMergeClassicFormatDump() throws Exception {
     testMergeDump("classicFormatDump");
   }
 
   @Test
-  public void testMergeCompressedFloatFormatDump() throws IOException {
+  public void testMergeCompressedFloatFormatDump() throws Exception {
     testMergeDump("compressedFloatFormatDump");
   }
 
-  public void testMergeDump(String dumpName) throws IOException {
-    int spp = 100;
+  public void testMergeDump(String dumpName) throws Exception {
     long renderTime = 123456L;
-    double[] preMergeSamples = {0.5, 1.0, 2.0, 0.5, 1.0, 2.0, 2.0, 1.5, 2.5};
-    double[] postMergeSamples = {0.75, 1.0, 1.5, 0.25, 0.5, 1.0, 1.5, 1.25, 1.75};
+    double[][] preMergeSamples = {
+        {0.5, 1.0, 2.0},
+        {0.5, 1.0, 2.0},
+        {2.0, 1.5, 2.5}
+    };
+    int[] preMergeSpp = {100, 100, 100};
+    double[][] postMergeSamples = {
+        {0.75, 1.0, 1.5},
+        {0.25, 0.5, 1.0},
+        {1.5, 1.25, 1.75}
+    };
 
-    Scene scene = createTestScene(testWidth, testHeight, spp, renderTime);
-    System.arraycopy(preMergeSamples, 0, scene.getSampleBuffer(), 0, preMergeSamples.length);
+    Vector3 color = new Vector3();
+    Scene scene = createTestScene(renderTime);
+    RenderBuffer buffer = scene.getRenderBuffer();
+    RenderTile tile = buffer.getTile(0, 0, testWidth, testHeight).get();
+    for (int i = 0; i < preMergeSamples.length; i++) {
+      tile.setPixel(i, 0, preMergeSamples[i][0], preMergeSamples[i][1], preMergeSamples[i][2], preMergeSpp[i]);
+    }
+    tile.commit();
 
     ByteArrayInputStream inputStream = new ByteArrayInputStream(getTestDump(dumpName));
     RenderDump.merge(inputStream, scene, taskTracker);
-    assertEquals(spp + testSPP, scene.spp);
+
+    tile = buffer.getTile(0, 0, testWidth, testHeight).get();
+    for (int i = 0; i < preMergeSamples.length; i++) {
+      assertEquals(preMergeSpp[i] + testSPP, tile.getColor(i, 0, color));
+      assertEquals(color.x, postMergeSamples[i][0], 0);
+      assertEquals(color.y, postMergeSamples[i][1], 0);
+      assertEquals(color.z, postMergeSamples[i][2], 0);
+    }
+    for (int x = 0; x < testWidth; x++) {
+      for (int y = 0; y < testHeight; y++) {
+        if (y != 0 || x >= preMergeSamples.length) {
+          assertEquals(testSPP, tile.getColor(x, y, null));
+        }
+      }
+    }
+
     assertEquals(renderTime + testRenderTime, scene.renderTime);
-    assertArrayEquals(postMergeSamples, Arrays.copyOf(scene.getSampleBuffer(), postMergeSamples.length), 0.0);
   }
 
   /**
    * it is currently not expected to write the old format (but it would be possible)
    */
   @Test
-  public void testSaveCompressedFloatFormatDump() throws IOException {
-    testSaveDump("compressedFloatFormatDump");
+  public void testSaveCompressedFloatFormatDump() throws Exception {
+    testSaveDump("compressedFloatFormatDump", 1);
   }
 
-  public void testSaveDump(String dumpName) throws IOException {
-    Scene scene = createTestScene(testWidth, testHeight, testSPP, testRenderTime);
+  public void testSaveDump(String dumpName, int version) throws Exception {
+    Scene scene = createTestScene(testRenderTime);
+    scene.getRenderBuffer().getTile(0, 0, 1, 1).get().setPixel(0, 0, 0, 0, 0, 100);
+
     System.arraycopy(testSampleBuffer, 0, scene.getSampleBuffer(), 0, testSampleBuffer.length);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    RenderDump.save(outputStream, scene, taskTracker);
+    RenderDump.save(outputStream, scene, taskTracker, version);
     assertArrayEquals(getTestDump(dumpName), outputStream.toByteArray());
   }
 

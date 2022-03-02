@@ -19,6 +19,7 @@ package se.llbit.chunky.renderer.renderdump;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
+import se.llbit.log.Log;
 import se.llbit.math.Vector3;
 import se.llbit.util.IsolatedOutputStream;
 import se.llbit.util.TaskTracker;
@@ -63,7 +64,7 @@ public class ClassicDumpFormat implements DumpFormat {
       nextTile();
       nextTile();
 
-      pixel = new AbstractLegacyDumpFormat.Pixel(0, 0, buffer.getWidth(), tile);
+      pixel = new AbstractLegacyDumpFormat.Pixel(0, -1, buffer.getWidth(), tile);
     }
 
     private void nextTile() {
@@ -153,6 +154,8 @@ public class ClassicDumpFormat implements DumpFormat {
 
   @Override
   public void save(DataOutputStream outputStream, Scene scene, TaskTracker taskTracker) throws IOException {
+    Log.warn("Saving classic dump format loses sample information!");
+
     try (DataOutputStream out = new DataOutputStream(new GZIPOutputStream(new IsolatedOutputStream(outputStream)))) {
       try (TaskTracker.Task task = taskTracker.task("Saving render dump", scene.width * scene.height)) {
         AbstractLegacyDumpFormat.writeHeader(outputStream, scene);
@@ -178,7 +181,9 @@ public class ClassicDumpFormat implements DumpFormat {
       throws IOException, IllegalStateException {
     DataInputStream in = new DataInputStream(new GZIPInputStream(inputStream));
     try (TaskTracker.Task task = taskTracker.task("Merging render dump", scene.width * scene.height)) {
+      long previousRenderTime = scene.renderTime;
       int spp = LegacyStreamDumpFormat.readHeader(in, scene);
+      scene.renderTime += previousRenderTime;
 
       int done = 0;
       Iterator<AbstractLegacyDumpFormat.Pixel> iterator = new BufferIterator(scene.getRenderBuffer());

@@ -19,6 +19,7 @@ package se.llbit.chunky.renderer.renderdump;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
+import se.llbit.log.Log;
 import se.llbit.math.Vector3;
 import se.llbit.util.TaskTracker;
 
@@ -108,7 +109,7 @@ abstract class AbstractLegacyDumpFormat implements DumpFormat {
       nextTile();
       nextTile();
 
-      pixel = new Pixel(0, 0, buffer.getWidth(), tile);
+      pixel = new Pixel(-1, 0, buffer.getWidth(), tile);
     }
 
     private void nextTile() {
@@ -229,6 +230,7 @@ abstract class AbstractLegacyDumpFormat implements DumpFormat {
   @Override
   public void save(DataOutputStream outputStream, Scene scene, TaskTracker taskTracker)
       throws IOException {
+    Log.warn("Saving legacy dump format loses sample information!");
     try (TaskTracker.Task task = taskTracker.task("Saving render dump", scene.width * scene.height)) {
       BufferIterable pixels = new BufferIterable(() -> new BufferIterator(scene.getRenderBuffer()));
       writeHeader(outputStream, scene);
