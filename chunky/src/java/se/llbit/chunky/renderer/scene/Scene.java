@@ -3052,6 +3052,7 @@ public class Scene implements JsonSerializable, Refreshable {
     }
     spp = 0;
     renderTime = 0;
+    if (samples != null) samples.reset();
     setResetReason(reason);
     notifyAll();
   }

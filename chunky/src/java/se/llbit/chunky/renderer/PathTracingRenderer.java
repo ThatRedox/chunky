@@ -1,4 +1,4 @@
-/* Copyright (c) 2021 Chunky contributors
+/* Copyright (c) 2021-2022 Chunky contributors
  *
  * This file is part of Chunky.
  *
@@ -19,6 +19,8 @@ package se.llbit.chunky.renderer;
 import se.llbit.chunky.renderer.scene.Camera;
 import se.llbit.chunky.renderer.scene.RayTracer;
 import se.llbit.chunky.renderer.scene.Scene;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 public class PathTracingRenderer extends TileBasedRenderer {
   protected final String id;
@@ -60,7 +62,7 @@ public class PathTracingRenderer extends TileBasedRenderer {
     double invHeight = 1.0 / height;
 
     do {
-      renderTiles(manager, state -> {
+      long samples = renderTiles(manager, state -> {
         double sr = 0;
         double sg = 0;
         double sb = 0;
@@ -84,7 +86,8 @@ public class PathTracingRenderer extends TileBasedRenderer {
 
         return state.tile.getColor(state.x, state.y, null) >= scene.getTargetSpp();
       });
-      scene.spp++;
-    } while (!postRender.getAsBoolean());
+
+      scene.spp = Math.toIntExact(samples / ((long) scene.width * scene.height));
+    } while (!postRender.getAsBoolean() && !isComplete());
   }
 }

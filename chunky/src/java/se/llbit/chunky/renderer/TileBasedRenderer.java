@@ -1,4 +1,4 @@
-/* Copyright (c) 2021 Chunky contributors
+/* Copyright (c) 2021-2022 Chunky contributors
  *
  * This file is part of Chunky.
  *
@@ -22,8 +22,12 @@ import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
 import se.llbit.math.Ray;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -43,6 +47,7 @@ public abstract class TileBasedRenderer implements Renderer {
     private ArrayBlockingQueue<Tile> tilesQueue = null;
 
     protected static class Tile {
+        public long sampleCount = 0;
         public boolean complete = false;
         public int x0, x1;
         public int y0, y1;
@@ -90,10 +95,27 @@ public abstract class TileBasedRenderer implements Renderer {
      * @param perPixel This is called on every pixel. The first argument is the worker state.
      *                 The second argument is the current pixel (x, y). Return {@code true} if this pixel has
      *                 been rendered to completion.
-     * @return {@code true} if done rendering.
+     * @return Total samples rendered so far.
      */
-    protected boolean renderTiles(DefaultRenderManager manager, Predicate<WorkerState> perPixel) {
-        initTiles();
+    protected long renderTiles(DefaultRenderManager manager, Predicate<WorkerState> perPixel) {
+        if (tilesQueue != null) {
+            tilesQueue.clear();
+        }
+        if (tilesQueue == null || tilesQueue.remainingCapacity() < tiles.size()) {
+            tilesQueue = new ArrayBlockingQueue<>(tiles.size());
+        }
+        List<Tile> tilesList = tiles.stream()
+            .filter(t -> !t.complete)
+            .collect(Collectors.toList());
+        Collections.shuffle(tilesList);
+        tilesQueue.addAll(tilesList);
+
+        AtomicLong samplesCount = new AtomicLong(
+            tiles.stream()
+                .filter(t -> t.complete)
+                .mapToLong(t -> t.sampleCount)
+                .sum()
+        );
 
         IntStream.range(0, manager.pool.threads).mapToObj(i -> manager.pool.submit(worker -> {
             Tile nextTile = tilesQueue.poll();
@@ -126,6 +148,21 @@ public abstract class TileBasedRenderer implements Renderer {
                     managerTile.complete = complete;
                     worker.workSleep();
                 } while (!managerTile.complete && tileFuture != null && !tileFuture.isDone());
+
+                long sum = 0;
+                for (int x = 0; x < tile.getTileWidth(); x++) {
+                    for (int y = 0; y < tile.getTileHeight(); y++) {
+                        sum += tile.getColor(
+                            tile.getBufferX(x),
+                            tile.getBufferY(y),
+                            null
+                        );
+                    }
+                }
+                if (managerTile.complete) {
+                    managerTile.sampleCount = sum;
+                }
+                samplesCount.addAndGet(sum);
             }
         })).collect(Collectors.toList()).forEach(j -> {
             try {
@@ -135,18 +172,13 @@ public abstract class TileBasedRenderer implements Renderer {
             }
         });
 
-        return tiles.stream().allMatch(t -> t.complete);
+        return samplesCount.get();
     }
 
-    private void initTiles() {
-        if (tilesQueue != null) {
-            tilesQueue.clear();
-        }
-        if (tilesQueue == null || tilesQueue.remainingCapacity() < tiles.size()) {
-            tilesQueue = new ArrayBlockingQueue<>(tiles.size());
-        }
-        tiles.stream()
-            .filter(t -> !t.complete)
-            .forEach(tilesQueue::add);
+    /**
+     * @return {@code true} if all the tiles are done rendering.
+     */
+    protected boolean isComplete() {
+        return tiles.stream().allMatch(t -> t.complete);
     }
 }

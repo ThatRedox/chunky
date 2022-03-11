@@ -2,6 +2,7 @@ package se.llbit.chunky.renderer.scene.renderbuffer;
 
 import se.llbit.math.Vector3;
 
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
@@ -117,7 +118,7 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
     }
 
     public DoubleArrayRenderBuffer(int width, int height) {
-        int bufferLength = Math.toIntExact(3 * width * height);
+        int bufferLength = 3 * width * height;
 
         this.width = width;
         this.height = height;
@@ -128,6 +129,14 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
     @Override
     public Future<RenderTile> getTile(int x, int y, int width, int height) {
         return CompletableFuture.completedFuture(new Tile(x, y, width, height));
+//        return CompletableFuture.supplyAsync(() -> {
+//            try {
+//                Thread.sleep(1000);
+//            } catch (InterruptedException e) {
+//
+//            }
+//            return new Tile(x, y, width, height);
+//        });
     }
 
     @Override
@@ -138,6 +147,11 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
     @Override
     public int getHeight() {
         return height;
+    }
+
+    @Override
+    public void reset() {
+        Arrays.fill(spp, 0);
     }
 
     @Override

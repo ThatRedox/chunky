@@ -1,4 +1,4 @@
-/* Copyright (c) 2021 Chunky contributors
+/* Copyright (c) 2021-2022 Chunky contributors
  *
  * This file is part of Chunky.
  *

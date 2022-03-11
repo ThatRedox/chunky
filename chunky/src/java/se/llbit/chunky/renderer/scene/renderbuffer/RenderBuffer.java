@@ -46,4 +46,9 @@ public interface RenderBuffer extends Registerable {
      * Get the render preview.
      */
     RenderPreview getPreview();
+
+    /**
+     * Reset the render buffer and clear all samples.
+     */
+    void reset();
 }
