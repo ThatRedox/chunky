@@ -49,7 +49,7 @@ public class PathTracingRenderer extends TileBasedRenderer {
   }
 
   @Override
-  public void render(DefaultRenderManager manager) throws InterruptedException {
+  public void doRender(DefaultRenderManager manager) throws InterruptedException {
     Scene scene = manager.bufferedScene;
     int width = scene.width;
     int height = scene.height;
@@ -59,27 +59,20 @@ public class PathTracingRenderer extends TileBasedRenderer {
     double halfWidth = width / (2.0 * height);
     double invHeight = 1.0 / height;
 
-    double[] sampleBuffer = scene.getSampleBuffer();
-
-    while (scene.spp < scene.getTargetSpp()) {
-      int spp = scene.spp;
-      double sinv = 1.0 / (sppPerPass + spp);
-
-      submitTiles(manager, (state, pixel) -> {
-        int x = pixel.firstInt();
-        int y = pixel.secondInt();
-
+    do {
+      renderTiles(manager, state -> {
         double sr = 0;
         double sg = 0;
         double sb = 0;
+        int s = Math.min(sppPerPass, scene.getTargetSpp() - state.tile.getColor(state.x, state.y, null));
 
-        for (int k = 0; k < sppPerPass; k++) {
+        for (int k = 0; k < s; k++) {
           double ox = state.random.nextDouble();
           double oy = state.random.nextDouble();
 
           cam.calcViewRay(state.ray, state.random,
-              -halfWidth + (x + ox) * invHeight,
-              -0.5 + (y + oy) * invHeight);
+              -halfWidth + (state.x + ox) * invHeight,
+              -0.5 + (state.y + oy) * invHeight);
           scene.rayTrace(tracer, state);
 
           sr += state.ray.color.x;
@@ -87,15 +80,11 @@ public class PathTracingRenderer extends TileBasedRenderer {
           sb += state.ray.color.z;
         }
 
-        int offset = 3 * (y*width + x);
-        sampleBuffer[offset + 0] = (sampleBuffer[offset + 0] * spp + sr) * sinv;
-        sampleBuffer[offset + 1] = (sampleBuffer[offset + 1] * spp + sg) * sinv;
-        sampleBuffer[offset + 2] = (sampleBuffer[offset + 2] * spp + sb) * sinv;
-      });
+        state.tile.mergeColor(state.x, state.y, sr, sg, sb, s);
 
-      manager.pool.awaitEmpty();
-      scene.spp += sppPerPass;
-      if (postRender.getAsBoolean()) break;
-    }
+        return state.tile.getColor(state.x, state.y, null) >= scene.getTargetSpp();
+      });
+      scene.spp++;
+    } while (!postRender.getAsBoolean());
   }
 }

@@ -31,29 +31,31 @@ public class RenderBufferTest {
     @Test
     public void testWriteReadback() throws Exception {
         Random rand = new Random(0);
-        RenderBuffer buffer = factory.create(128, 128);
+        RenderBuffer buffer = factory.create(512, 512);
         // Whole buffer in 1 tile
-        RenderTile tile = buffer.getTile(0, 0, 128, 128).get();
+        RenderTile tile = buffer.getTile(0, 0, 512, 512).get();
         // Write random data
         for (int x = 0; x < tile.getTileWidth(); x++) {
             for (int y = 0; y < tile.getTileHeight(); y++) {
-                tile.setPixel(x, y, rand.nextDouble(), rand.nextDouble(), rand.nextDouble(), rand.nextInt());
+                tile.setPixel(tile.getBufferX(x), tile.getBufferY(y), rand.nextDouble(), rand.nextDouble(), rand.nextDouble(), rand.nextInt());
             }
         }
 
         tile.commit();
-        tile = buffer.getTile(0, 0, 128, 128).get();
 
-        // Read back the data
+        // Read back in tiles
         rand = new Random(0);
         Vector3 color = new Vector3();
-        for (int x = 0; x < tile.getTileWidth(); x++) {
-            for (int y = 0; y < tile.getTileHeight(); y++) {
-                int spp = tile.getColor(x, y, color);
-                Assert.assertEquals(rand.nextDouble(), color.x, 0);
-                Assert.assertEquals(rand.nextDouble(), color.y, 0);
-                Assert.assertEquals(rand.nextDouble(), color.z, 0);
-                Assert.assertEquals(rand.nextInt(), spp);
+        for (int i = 0; i < 512; i += 128) {
+            tile = buffer.getTile(i, 0, 128, 512).get();
+            for (int x = 0; x < tile.getTileWidth(); x++) {
+                for (int y = 0; y < tile.getTileHeight(); y++) {
+                    int spp = tile.getColor(tile.getBufferX(x), tile.getBufferY(y), color);
+                    Assert.assertEquals(rand.nextDouble(), color.x, 0);
+                    Assert.assertEquals(rand.nextDouble(), color.y, 0);
+                    Assert.assertEquals(rand.nextDouble(), color.z, 0);
+                    Assert.assertEquals(rand.nextInt(), spp);
+                }
             }
         }
     }

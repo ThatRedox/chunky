@@ -6,8 +6,8 @@ import se.llbit.util.annotation.Nullable;
 public interface RenderTile {
     /**
      * Get the color.
-     * @param x     Tile x
-     * @param y     Tile y
+     * @param x     Buffer x
+     * @param y     Buffer y
      * @param color Color is returned in this Vector
      * @return Number of samples
      */
@@ -15,8 +15,8 @@ public interface RenderTile {
 
     /**
      * Merge samples into a pixel.
-     * @param x Tile x
-     * @param y Tile y
+     * @param x Buffer x
+     * @param y Buffer y
      * @param r Red component
      * @param g Green component
      * @param b Blue component
@@ -26,8 +26,8 @@ public interface RenderTile {
 
     /**
      * Merge samples into a pixel.
-     * @param x     Tile x
-     * @param y     Tile y
+     * @param x     Buffer x
+     * @param y     Buffer y
      * @param color Color
      * @param s     Number of samples
      */
@@ -37,8 +37,8 @@ public interface RenderTile {
 
     /**
      * Set a pixel.
-     * @param x Tile x
-     * @param y Tile y
+     * @param x Buffer x
+     * @param y Buffer y
      * @param r Red component
      * @param g Green component
      * @param b Blue component

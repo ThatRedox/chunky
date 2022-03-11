@@ -16,6 +16,7 @@
  */
 package se.llbit.chunky.renderer;
 
+import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
 import se.llbit.math.Ray;
 import se.llbit.math.Vector4;
 
@@ -28,4 +29,8 @@ public class WorkerState {
   public Ray ray;
   public Vector4 attenuation = new Vector4();
   public Random random;
+
+  public int x;
+  public int y;
+  public RenderTile tile;
 }

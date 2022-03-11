@@ -116,7 +116,7 @@ public class RenderDumpTest {
     RenderTile tile = scene.getRenderBuffer().getTile(0, 0, testWidth, testHeight).get();
     for (int x = 0; x < testWidth; x++) {
       for (int y = 0; y < testHeight; y++) {
-        assertEquals(testSPP, tile.getColor(x, y, null));
+        assertEquals(testSPP, tile.getColor(tile.getBufferX(x), tile.getBufferY(y), null));
       }
     }
   }
@@ -167,7 +167,7 @@ public class RenderDumpTest {
     for (int x = 0; x < testWidth; x++) {
       for (int y = 0; y < testHeight; y++) {
         if (y != 0 || x >= preMergeSamples.length) {
-          assertEquals(testSPP, tile.getColor(x, y, null));
+          assertEquals(testSPP, tile.getColor(tile.getBufferX(x), tile.getBufferY(y), null));
         }
       }
     }

@@ -16,15 +16,18 @@
  */
 package se.llbit.chunky.renderer;
 
-import it.unimi.dsi.fastutil.ints.IntIntMutablePair;
-import it.unimi.dsi.fastutil.ints.IntIntPair;
 import org.apache.commons.math3.util.FastMath;
-import se.llbit.chunky.renderer.scene.Scene;
+import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
+import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
 import se.llbit.math.Ray;
 
 import java.util.ArrayList;
-import java.util.function.BiConsumer;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Future;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * A tile based renderer. Simply call {@code submitTiles} to submit a frame's worth of tiles to the work queue.
@@ -34,75 +37,116 @@ import java.util.function.BooleanSupplier;
  * Implementation detail: Tiles are cached for faster rendering.
  */
 public abstract class TileBasedRenderer implements Renderer {
-  protected BooleanSupplier postRender = () -> true;
+    protected BooleanSupplier postRender = () -> true;
 
-  private final ArrayList<RenderTile> cachedTiles = new ArrayList<>();
-  private int prevWidth = -1;
-  private int prevHeight = -1;
+    private final ArrayList<Tile> tiles = new ArrayList<>();
+    private ArrayBlockingQueue<Tile> tilesQueue = null;
 
-  public static class RenderTile {
-    public int x0, x1;
-    public int y0, y1;
+    protected static class Tile {
+        public boolean complete = false;
+        public int x0, x1;
+        public int y0, y1;
 
-    public RenderTile(int x0, int x1, int y0, int y1) {
-      this.x0 = x0;
-      this.x1 = x1;
-      this.y0 = y0;
-      this.y1 = y1;
-    }
-  }
-
-  @Override
-  public void setPostRender(BooleanSupplier callback) {
-    postRender = callback;
-  }
-
-  /**
-   * Create and submit tiles to the rendering pool.
-   * Await for these tiles to finish rendering with {@code manager.pool.awaitEmpty()}.
-   *
-   * @param perPixel This is called on every pixel. The first argument is the worker state.
-   *                 The second argument is the current pixel (x, y).
-   */
-  protected void submitTiles(DefaultRenderManager manager, BiConsumer<WorkerState, IntIntPair> perPixel) {
-    initTiles(manager);
-
-    cachedTiles.forEach(tile ->
-        manager.pool.submit(worker -> {
-          WorkerState state = new WorkerState();
-          state.ray = new Ray();
-          state.ray.setNormal(0, 0, -1);
-          state.random = worker.random;
-
-          IntIntMutablePair pair = new IntIntMutablePair(0, 0);
-
-          for (int i = tile.x0; i < tile.x1; i++) {
-            for (int j = tile.y0; j < tile.y1; j++) {
-              pair.left(i).right(j);
-              perPixel.accept(state, pair);
-            }
-          }
-        })
-    );
-  }
-
-  private void initTiles(DefaultRenderManager manager) {
-    Scene bufferedScene = manager.bufferedScene;
-    int width = bufferedScene.width;
-    int height = bufferedScene.height;
-    int tileWidth = manager.context.tileWidth();
-
-    if (prevWidth != width || prevHeight != height) {
-      prevWidth = width;
-      prevHeight = height;
-      cachedTiles.clear();
-
-      for (int i = 0; i < width; i += tileWidth) {
-        for (int j = 0; j < height; j += tileWidth) {
-          cachedTiles.add(new RenderTile(i, FastMath.min(i + tileWidth, width),
-              j, FastMath.min(j + tileWidth, height)));
+        public Tile(int x0, int x1, int y0, int y1) {
+            this.x0 = x0;
+            this.x1 = x1;
+            this.y0 = y0;
+            this.y1 = y1;
         }
-      }
+
+        public Future<RenderTile> getTile(RenderBuffer buffer) {
+            return buffer.getTile(this.x0, this.y0, this.x1-this.x0, this.y1-this.y0);
+        }
     }
-  }
+
+    @Override
+    public void setPostRender(BooleanSupplier callback) {
+        postRender = callback;
+    }
+
+    @Override
+    public void render(DefaultRenderManager manager) throws InterruptedException {
+        tiles.clear();
+        int width = manager.bufferedScene.getRenderBuffer().getWidth();
+        int height = manager.bufferedScene.getRenderBuffer().getHeight();
+        int tileWidth = manager.context.tileWidth();
+
+        for (int i = 0; i < width; i += tileWidth) {
+            for (int j = 0; j < height; j += tileWidth) {
+                tiles.add(new Tile(i, FastMath.min(i + tileWidth, width),
+                    j, FastMath.min(j + tileWidth, height)));
+            }
+        }
+
+        doRender(manager);
+    }
+
+    public abstract void doRender(DefaultRenderManager manager) throws InterruptedException;
+
+    /**
+     * Create and submit tiles to the rendering pool.
+     * Await for these tiles to finish rendering with {@code manager.pool.awaitEmpty()}.
+     *
+     * @param perPixel This is called on every pixel. The first argument is the worker state.
+     *                 The second argument is the current pixel (x, y). Return {@code true} if this pixel has
+     *                 been rendered to completion.
+     * @return {@code true} if done rendering.
+     */
+    protected boolean renderTiles(DefaultRenderManager manager, Predicate<WorkerState> perPixel) {
+        initTiles();
+
+        IntStream.range(0, manager.pool.threads).mapToObj(i -> manager.pool.submit(worker -> {
+            Tile nextTile = tilesQueue.poll();
+            if (nextTile == null) return;
+            Future<RenderTile> tileFuture = nextTile.getTile(manager.bufferedScene.getRenderBuffer());
+
+            while (tileFuture != null) {
+                Tile managerTile = nextTile;
+                RenderTile tile = tileFuture.get();
+
+                nextTile = tilesQueue.poll();
+                tileFuture = nextTile == null ? null : nextTile.getTile(manager.bufferedScene.getRenderBuffer());
+
+                WorkerState state = new WorkerState();
+                state.ray = new Ray();
+                state.ray.setNormal(0, 0, -1);
+                state.random = worker.random;
+                state.tile = tile;
+
+                do {
+                    boolean complete = true;
+                    for (int x = 0; x < tile.getTileWidth(); x++) {
+                        for (int y = 0; y < tile.getTileHeight(); y++) {
+                            state.x = tile.getBufferX(x);
+                            state.y = tile.getBufferY(y);
+
+                            complete &= perPixel.test(state);
+                        }
+                    }
+                    managerTile.complete = complete;
+                    worker.workSleep();
+                } while (!managerTile.complete && tileFuture != null && !tileFuture.isDone());
+            }
+        })).collect(Collectors.toList()).forEach(j -> {
+            try {
+                j.awaitFinish();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return tiles.stream().allMatch(t -> t.complete);
+    }
+
+    private void initTiles() {
+        if (tilesQueue != null) {
+            tilesQueue.clear();
+        }
+        if (tilesQueue == null || tilesQueue.remainingCapacity() < tiles.size()) {
+            tilesQueue = new ArrayBlockingQueue<>(tiles.size());
+        }
+        tiles.stream()
+            .filter(t -> !t.complete)
+            .forEach(tilesQueue::add);
+    }
 }

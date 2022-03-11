@@ -87,9 +87,9 @@ public class TiledStreamDumpFormat extends AbstractTiledDumpFormat {
 
                     // Set the pixel
                     if (merge) {
-                        tile.mergeColor(x, y, r, g, b, s);
+                        tile.mergeColor(tile.getBufferX(x), tile.getBufferY(y), r, g, b, s);
                     } else {
-                        tile.setPixel(x, y, r, g, b, s);
+                        tile.setPixel(tile.getBufferX(x), tile.getBufferY(y), r, g, b, s);
                     }
                 }
             }
@@ -122,14 +122,14 @@ public class TiledStreamDumpFormat extends AbstractTiledDumpFormat {
                 // Write the tile spp
                 for (int y = 0; y < tile.getTileHeight(); y++) {
                     for (int x = 0; x < tile.getTileWidth(); x++) {
-                        out.writeInt(tile.getColor(x, y, null));
+                        out.writeInt(tile.getColor(tile.getBufferX(x), tile.getBufferY(y), null));
                     }
                 }
 
                 // Write the tile samples
                 for (int y = 0; y < tile.getTileHeight(); y++) {
                     for (int x = 0; x < tile.getTileWidth(); x++) {
-                        tile.getColor(x, y, color);
+                        tile.getColor(tile.getBufferX(x), tile.getBufferY(y), color);
 
                         out.writeDouble(color.x);
                         out.writeDouble(color.y);

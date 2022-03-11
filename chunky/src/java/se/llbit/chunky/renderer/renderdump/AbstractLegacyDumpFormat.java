@@ -69,15 +69,15 @@ abstract class AbstractLegacyDumpFormat implements DumpFormat {
     }
 
     public int getColor(Vector3 color) {
-      return tile.getColor(x, y, color);
+      return tile.getColor(tile.getBufferX(x), tile.getBufferY(y), color);
     }
 
     public void set(double r, double g, double b, int s) {
-      tile.setPixel(x, y, r, g, b, s);
+      tile.setPixel(tile.getBufferX(x), tile.getBufferY(y), r, g, b, s);
     }
 
     public void merge(double r, double g, double b, int s) {
-      tile.mergeColor(x, y, r, g, b, s);
+      tile.mergeColor(tile.getBufferX(x), tile.getBufferY(y), r, g, b, s);
     }
 
     protected void setPixel(int x, int y, RenderTile tile) {

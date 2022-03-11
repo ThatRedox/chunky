@@ -26,7 +26,7 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
         }
 
         private int getIndex(int x, int y) {
-            return Math.toIntExact(getBufferX(x) + getBufferY(y) * width);
+            return x + y * width;
         }
 
         @Override
