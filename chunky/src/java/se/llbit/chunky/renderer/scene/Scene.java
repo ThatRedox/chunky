@@ -51,6 +51,7 @@ import se.llbit.chunky.block.*;
 import se.llbit.chunky.block.legacy.LegacyBlocksFinalizer;
 import se.llbit.chunky.chunk.BlockPalette;
 import se.llbit.chunky.chunk.ChunkData;
+import se.llbit.chunky.chunk.EmptyChunkData;
 import se.llbit.chunky.chunk.biome.BiomeData;
 import se.llbit.chunky.entity.ArmorStand;
 import se.llbit.chunky.entity.Entity;
@@ -422,9 +423,9 @@ public class Scene implements JsonSerializable, Refreshable {
   /**
    * Export the scene to a zip file.
    */
-  public static void exportToZip(String name, File targetFile) {
+  public static void exportToZip(File sceneDirectory, String name, File targetFile) {
     String[] extensions = { ".json", ".dump", ".octree2", ".foliage", ".grass", ".emittergrid", };
-    ZipExport.zip(targetFile, SynchronousSceneManager.resolveSceneDirectory(name), name, extensions);
+    ZipExport.zip(targetFile, new File(sceneDirectory, name), name, extensions);
   }
 
   /**
@@ -1030,6 +1031,9 @@ public class Scene implements JsonSerializable, Refreshable {
               world.getChunk(chunkPositions[finalI + 1]).getChunkData(nextChunkData, palette, biomePalette, yMin, yMax);
             });
           }
+        }
+        if (chunkData == null) {
+          chunkData = EmptyChunkData.INSTANCE;
         }
 
         numChunks += 1;

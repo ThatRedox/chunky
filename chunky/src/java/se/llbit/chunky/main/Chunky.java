@@ -37,7 +37,7 @@ import se.llbit.chunky.renderer.scene.SynchronousSceneManager;
 import se.llbit.chunky.resources.SettingsDirectory;
 import se.llbit.chunky.resources.TexturePackLoader;
 import se.llbit.chunky.ui.ChunkyFx;
-import se.llbit.chunky.ui.CreditsController;
+import se.llbit.chunky.ui.controller.CreditsController;
 import se.llbit.chunky.ui.render.RenderControlsTabTransformer;
 import se.llbit.chunky.world.MaterialStore;
 import se.llbit.json.JsonArray;
@@ -139,7 +139,7 @@ public class Chunky {
       if (renderManager.getSnapshotControl().saveRenderDump(scene, spp)) {
         // Save the scene description and current render dump.
         try {
-          sceneManager.saveScene();
+          sceneManager.saveScene(getRenderContext().getSceneDirectory());
         } catch (InterruptedException e) {
           throw new Error(e);
         }
@@ -158,7 +158,7 @@ public class Chunky {
     });
 
     try {
-      sceneManager.loadScene(options.sceneName);
+      sceneManager.loadScene(options.sceneDir, options.sceneName);
       if (options.target != -1) {
         sceneManager.getScene().setTargetSpp(options.target);
       }
