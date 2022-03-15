@@ -21,6 +21,7 @@ import org.junit.Test;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
+import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderTile;
 import se.llbit.math.Vector3;
 import se.llbit.util.ProgressListener;
 import se.llbit.util.TaskTracker;
@@ -148,7 +149,7 @@ public class RenderDumpTest {
     Vector3 color = new Vector3();
     Scene scene = createTestScene(renderTime);
     RenderBuffer buffer = scene.getRenderBuffer();
-    RenderTile tile = buffer.getTile(0, 0, testWidth, testHeight).get();
+    WriteableRenderTile tile = (WriteableRenderTile) buffer.getTile(0, 0, testWidth, testHeight).get();
     for (int i = 0; i < preMergeSamples.length; i++) {
       tile.setPixel(i, 0, preMergeSamples[i][0], preMergeSamples[i][1], preMergeSamples[i][2], preMergeSpp[i]);
     }
@@ -157,7 +158,7 @@ public class RenderDumpTest {
     ByteArrayInputStream inputStream = new ByteArrayInputStream(getTestDump(dumpName));
     RenderDump.merge(inputStream, scene, taskTracker);
 
-    tile = buffer.getTile(0, 0, testWidth, testHeight).get();
+    tile = (WriteableRenderTile) buffer.getTile(0, 0, testWidth, testHeight).get();
     for (int i = 0; i < preMergeSamples.length; i++) {
       assertEquals(preMergeSpp[i] + testSPP, tile.getColor(i, 0, color));
       assertEquals(color.x, postMergeSamples[i][0], 0);

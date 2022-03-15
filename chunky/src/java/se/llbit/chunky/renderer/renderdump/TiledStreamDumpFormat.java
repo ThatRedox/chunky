@@ -3,6 +3,8 @@ package se.llbit.chunky.renderer.renderdump;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
+import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderBuffer;
+import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderTile;
 import se.llbit.log.Log;
 import se.llbit.math.Vector3;
 import se.llbit.util.IsolatedOutputStream;
@@ -41,7 +43,7 @@ public class TiledStreamDumpFormat extends AbstractTiledDumpFormat {
     @Override
     protected void readTiles(DataInputStream inputStream, Scene scene, boolean merge, TaskTracker.Task progress) throws IOException {
         DataInputStream in = new DataInputStream(inputStreamSupplier.apply(inputStream));
-        RenderBuffer renderBuffer = scene.getRenderBuffer();
+        WriteableRenderBuffer renderBuffer = scene.getRenderBuffer();
 
         // Read number of tiles
         long numTiles = in.readLong();
@@ -59,7 +61,7 @@ public class TiledStreamDumpFormat extends AbstractTiledDumpFormat {
             int tileHeight = in.readInt();
 
             // Fetch the tile
-            Future<RenderTile> tileFuture = renderBuffer.getTile(tileX, tileY, tileWidth, tileHeight);
+            Future<? extends WriteableRenderTile> tileFuture = renderBuffer.getTile(tileX, tileY, tileWidth, tileHeight);
 
             // Read the spp
             int[] spp = new int[tileWidth * tileHeight];
@@ -70,7 +72,7 @@ public class TiledStreamDumpFormat extends AbstractTiledDumpFormat {
             }
 
             // Get the tile
-            RenderTile tile;
+            WriteableRenderTile tile;
             try {
                 tile = tileFuture.get();
             } catch (ExecutionException | InterruptedException e) {

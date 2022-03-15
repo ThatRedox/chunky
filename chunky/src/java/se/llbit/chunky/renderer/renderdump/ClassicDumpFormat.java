@@ -19,6 +19,8 @@ package se.llbit.chunky.renderer.renderdump;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
+import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderBuffer;
+import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderTile;
 import se.llbit.log.Log;
 import se.llbit.math.Vector3;
 import se.llbit.util.IsolatedOutputStream;
@@ -43,17 +45,17 @@ public class ClassicDumpFormat implements DumpFormat {
   public static final ClassicDumpFormat INSTANCE = new ClassicDumpFormat();
 
   public static class BufferIterator implements Iterator<AbstractLegacyDumpFormat.Pixel> {
-    protected final RenderBuffer buffer;
+    protected final WriteableRenderBuffer buffer;
     protected final AbstractLegacyDumpFormat.Pixel pixel;
 
     protected final int tileWidth;
     protected final int tileHeight;
 
     protected int currentX;
-    protected Future<RenderTile> tileFuture;
-    protected RenderTile tile;
+    protected Future<? extends WriteableRenderTile> tileFuture;
+    protected WriteableRenderTile tile;
 
-    public BufferIterator(RenderBuffer buffer) {
+    public BufferIterator(WriteableRenderBuffer buffer) {
       this.buffer = buffer;
 
       tileWidth = Math.min(AbstractLegacyDumpFormat.MIN_PIXELS_PER_TILE / buffer.getHeight() + 1, buffer.getWidth());

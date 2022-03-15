@@ -69,9 +69,7 @@ import se.llbit.chunky.renderer.postprocessing.PostProcessingFilter;
 import se.llbit.chunky.renderer.postprocessing.PostProcessingFilters;
 import se.llbit.chunky.renderer.postprocessing.PreviewFilter;
 import se.llbit.chunky.renderer.renderdump.RenderDump;
-import se.llbit.chunky.renderer.scene.renderbuffer.DoubleArrayRenderBuffer;
-import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
-import se.llbit.chunky.renderer.scene.renderbuffer.RenderPreview;
+import se.llbit.chunky.renderer.scene.renderbuffer.*;
 import se.llbit.chunky.resources.BitmapImage;
 import se.llbit.chunky.resources.OctreeFileFormat;
 import se.llbit.chunky.world.biome.ArrayBiomePalette;
@@ -349,7 +347,7 @@ public class Scene implements JsonSerializable, Refreshable {
    * should really be moved somewhere else and not be so tightly
    * coupled to the scene settings.
    */
-  protected RenderBuffer samples;
+  protected WriteableRenderBuffer samples;
 
   private byte[] alphaChannel;
 
@@ -2107,7 +2105,7 @@ public class Scene implements JsonSerializable, Refreshable {
       filter = PreviewFilter.INSTANCE;
     }
     RenderPreview preview = getRenderBuffer().getPreview();
-    filter.processFrame(preview.getWidth(), preview.getHeight(), preview.getPreview(), backBuffer, exposure, task);
+    filter.processFrame(preview.getWidth(), preview.getHeight(), preview.getPreview().asDoubleArray(), backBuffer, exposure, task);
     finalized = true;
   }
 
@@ -2413,7 +2411,7 @@ public class Scene implements JsonSerializable, Refreshable {
   /**
    * Get access to the render buffer.
    */
-  public RenderBuffer getRenderBuffer() {
+  public WriteableRenderBuffer getRenderBuffer() {
     return samples;
   }
 

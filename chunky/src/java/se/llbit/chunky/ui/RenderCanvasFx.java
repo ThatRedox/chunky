@@ -82,7 +82,7 @@ public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStat
 
   private RenderStatusListener renderListener;
 
-  public RenderCanvasFx(se.llbit.chunky.renderer.scene.Scene scene, RenderManager renderManager) {
+  public RenderCanvasFx(Scene scene, RenderManager renderManager) {
     this.renderScene = scene;
     this.renderManager = renderManager;
     renderManager.addSceneStatusListener(this);

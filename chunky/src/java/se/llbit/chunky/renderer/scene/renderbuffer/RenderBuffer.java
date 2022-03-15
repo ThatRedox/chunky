@@ -10,8 +10,8 @@ public interface RenderBuffer extends Registerable {
      */
     int TILE_SIZE = 128;
 
-    interface Factory {
-        RenderBuffer create(int width, int height);
+    interface Factory<T extends RenderBuffer> {
+        T create(int width, int height);
     }
 
     /**
@@ -23,7 +23,7 @@ public interface RenderBuffer extends Registerable {
      * @param height    Tile height
      * @return Future which will resolve to the tile
      */
-    Future<RenderTile> getTile(int x, int y, int width, int height);
+    Future<? extends RenderTile> getTile(int x, int y, int width, int height);
 
     /**
      * Get the width of this buffer.
@@ -36,19 +36,7 @@ public interface RenderBuffer extends Registerable {
     int getHeight();
 
     /**
-     * Set the preferred preview resolution.
-     * @param perfWidth  preferred width
-     * @param perfHeight preferred height
-     */
-    void setPreviewResolution(int perfWidth, int perfHeight);
-
-    /**
      * Get the render preview.
      */
     RenderPreview getPreview();
-
-    /**
-     * Reset the render buffer and clear all samples.
-     */
-    void reset();
 }

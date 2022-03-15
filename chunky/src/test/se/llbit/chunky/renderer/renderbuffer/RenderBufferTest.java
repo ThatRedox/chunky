@@ -7,6 +7,7 @@ import org.junit.runners.Parameterized;
 import se.llbit.chunky.renderer.scene.renderbuffer.DoubleArrayRenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
+import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderTile;
 import se.llbit.math.Vector3;
 
 import java.util.Arrays;
@@ -33,7 +34,7 @@ public class RenderBufferTest {
         Random rand = new Random(0);
         RenderBuffer buffer = factory.create(512, 512);
         // Whole buffer in 1 tile
-        RenderTile tile = buffer.getTile(0, 0, 512, 512).get();
+        WriteableRenderTile tile = (WriteableRenderTile) buffer.getTile(0, 0, 512, 512).get();
         // Write random data
         for (int x = 0; x < tile.getTileWidth(); x++) {
             for (int y = 0; y < tile.getTileHeight(); y++) {
@@ -47,7 +48,7 @@ public class RenderBufferTest {
         rand = new Random(0);
         Vector3 color = new Vector3();
         for (int i = 0; i < 512; i += 128) {
-            tile = buffer.getTile(i, 0, 128, 512).get();
+            tile = (WriteableRenderTile) buffer.getTile(i, 0, 128, 512).get();
             for (int x = 0; x < tile.getTileWidth(); x++) {
                 for (int y = 0; y < tile.getTileHeight(); y++) {
                     int spp = tile.getColor(tile.getBufferX(x), tile.getBufferY(y), color);

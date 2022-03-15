@@ -19,6 +19,8 @@ package se.llbit.chunky.renderer.renderdump;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
+import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderBuffer;
+import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderTile;
 import se.llbit.log.Log;
 import se.llbit.math.Vector3;
 import se.llbit.util.TaskTracker;
@@ -47,9 +49,9 @@ abstract class AbstractLegacyDumpFormat implements DumpFormat {
     protected final int width;
     protected int x;
     protected int y;
-    protected RenderTile tile;
+    protected WriteableRenderTile tile;
 
-    protected Pixel(int x, int y, int width, RenderTile tile) {
+    protected Pixel(int x, int y, int width, WriteableRenderTile tile) {
       this.x = x;
       this.y = y;
       this.width = width;
@@ -80,7 +82,7 @@ abstract class AbstractLegacyDumpFormat implements DumpFormat {
       tile.mergeColor(tile.getBufferX(x), tile.getBufferY(y), r, g, b, s);
     }
 
-    protected void setPixel(int x, int y, RenderTile tile) {
+    protected void setPixel(int x, int y, WriteableRenderTile tile) {
       this.x = x;
       this.y = y;
       this.tile = tile;
@@ -88,17 +90,17 @@ abstract class AbstractLegacyDumpFormat implements DumpFormat {
   }
 
   public static class BufferIterator implements Iterator<Pixel> {
-    protected final RenderBuffer buffer;
+    protected final WriteableRenderBuffer buffer;
     protected final Pixel pixel;
 
     protected final int tileWidth;
     protected final int tileHeight;
 
     protected int currentY;
-    protected Future<RenderTile> tileFuture;
-    protected RenderTile tile;
+    protected Future<? extends WriteableRenderTile> tileFuture;
+    protected WriteableRenderTile tile;
 
-    public BufferIterator(RenderBuffer buffer) {
+    public BufferIterator(WriteableRenderBuffer buffer) {
       this.buffer = buffer;
 
       tileWidth = buffer.getWidth();

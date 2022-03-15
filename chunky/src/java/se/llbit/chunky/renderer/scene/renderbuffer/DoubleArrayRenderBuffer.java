@@ -6,22 +6,23 @@ import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
-public class DoubleArrayRenderBuffer implements RenderBuffer {
+public class DoubleArrayRenderBuffer implements WriteableRenderBuffer {
+    private final WriteableRenderPreview preview;
     private final double[] samples;
     private final int[] spp;
 
     private final int width;
     private final int height;
 
-    public class Tile implements RenderTile {
-        private final int xOffset;
-        private final int yOffset;
+    public class Tile implements WriteableRenderTile {
+        private final int offsetX;
+        private final int offsetY;
         private final int tileWidth;
         private final int tileHeight;
 
-        protected Tile(int xOffset, int yOffset, int tileWidth, int tileHeight) {
-            this.xOffset = xOffset;
-            this.yOffset = yOffset;
+        protected Tile(int offsetX, int offsetY, int tileWidth, int tileHeight) {
+            this.offsetX = offsetX;
+            this.offsetY = offsetY;
             this.tileWidth = tileWidth;
             this.tileHeight = tileHeight;
         }
@@ -30,8 +31,15 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
             return x + y * width;
         }
 
+        private boolean boundsCheck(int x, int y) {
+            return 0 <= x - offsetX && x - offsetX < tileWidth &&
+                   0 <= y - offsetY && y - offsetY < tileHeight;
+        }
+
         @Override
         public int getColor(int x, int y, Vector3 color) {
+            assert boundsCheck(x, y);
+
             int i = getIndex(x, y);
             if (color == null) {
                 return spp[i];
@@ -45,23 +53,35 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
 
         @Override
         public void mergeColor(int x, int y, double r, double g, double b, int s) {
+            assert boundsCheck(x, y);
+
             int i = getIndex(x, y);
             int baseSpp = spp[i];
             double sinv = 1.0 / (baseSpp + s);
 
-            samples[i*3 + 0] = (samples[i*3 + 0]*baseSpp + r*s) * sinv;
-            samples[i*3 + 1] = (samples[i*3 + 1]*baseSpp + g*s) * sinv;
-            samples[i*3 + 2] = (samples[i*3 + 2]*baseSpp + b*s) * sinv;
+            r = (samples[i*3 + 0]*baseSpp + r*s) * sinv;
+            g = (samples[i*3 + 1]*baseSpp + g*s) * sinv;
+            b = (samples[i*3 + 2]*baseSpp + b*s) * sinv;
+
+            samples[i*3 + 0] = r;
+            samples[i*3 + 1] = g;
+            samples[i*3 + 2] = b;
             spp[i] = baseSpp + s;
+
+            preview.setBackColor(x, y, r, g, b);
         }
 
         @Override
         public void setPixel(int x, int y, double r, double g, double b, int s) {
+            assert boundsCheck(x, y);
+
             int i = getIndex(x, y);
             samples[i*3 + 0] = r;
             samples[i*3 + 1] = g;
             samples[i*3 + 2] = b;
             spp[i] = s;
+
+            preview.setBackColor(x, y, r, g, b);
         }
 
         @Override
@@ -71,12 +91,12 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
 
         @Override
         public int getBufferX(int x) {
-            return x + xOffset;
+            return x + offsetX;
         }
 
         @Override
         public int getBufferY(int y) {
-            return y + yOffset;
+            return y + offsetY;
         }
 
         @Override
@@ -100,23 +120,6 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
         }
     }
 
-    public class Preview implements RenderPreview {
-        @Override
-        public int getWidth() {
-            return width;
-        }
-
-        @Override
-        public int getHeight() {
-            return height;
-        }
-
-        @Override
-        public double[] getPreview() {
-            return samples;
-        }
-    }
-
     public DoubleArrayRenderBuffer(int width, int height) {
         int bufferLength = 3 * width * height;
 
@@ -124,11 +127,13 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
         this.height = height;
         this.samples = new double[bufferLength];
         this.spp = new int[bufferLength];
+        this.preview = new WriteableRenderPreview(this);
     }
 
     @Override
-    public Future<RenderTile> getTile(int x, int y, int width, int height) {
+    public Future<Tile> getTile(int x, int y, int width, int height) {
         return CompletableFuture.completedFuture(new Tile(x, y, width, height));
+        // TODO Remove this debug stuff
 //        return CompletableFuture.supplyAsync(() -> {
 //            try {
 //                Thread.sleep(1000);
@@ -152,16 +157,16 @@ public class DoubleArrayRenderBuffer implements RenderBuffer {
     @Override
     public void reset() {
         Arrays.fill(spp, 0);
+        preview.reset();
     }
 
-    @Override
-    public void setPreviewResolution(int perfWidth, int perfHeight) {
-        // Does nothing right now
-    }
-
+    /**
+     * Get the render preview. Calling this will update the render preview to the most recent values.
+     */
     @Override
     public RenderPreview getPreview() {
-        return new Preview();
+        preview.commitBackColor();
+        return preview;
     }
 
     @Override

@@ -19,6 +19,8 @@ package se.llbit.chunky.renderer;
 import org.apache.commons.math3.util.FastMath;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
+import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderBuffer;
+import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderTile;
 import se.llbit.math.Ray;
 
 import java.util.ArrayList;
@@ -26,7 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
@@ -59,7 +60,7 @@ public abstract class TileBasedRenderer implements Renderer {
             this.y1 = y1;
         }
 
-        public Future<RenderTile> getTile(RenderBuffer buffer) {
+        public Future<? extends WriteableRenderTile> getTile(WriteableRenderBuffer buffer) {
             return buffer.getTile(this.x0, this.y0, this.x1-this.x0, this.y1-this.y0);
         }
     }
@@ -120,7 +121,7 @@ public abstract class TileBasedRenderer implements Renderer {
         IntStream.range(0, manager.pool.threads).mapToObj(i -> manager.pool.submit(worker -> {
             Tile nextTile = tilesQueue.poll();
             if (nextTile == null) return;
-            Future<RenderTile> tileFuture = nextTile.getTile(manager.bufferedScene.getRenderBuffer());
+            Future<? extends RenderTile> tileFuture = nextTile.getTile(manager.bufferedScene.getRenderBuffer());
 
             while (tileFuture != null) {
                 Tile managerTile = nextTile;
@@ -133,7 +134,7 @@ public abstract class TileBasedRenderer implements Renderer {
                 state.ray = new Ray();
                 state.ray.setNormal(0, 0, -1);
                 state.random = worker.random;
-                state.tile = tile;
+                state.tile = (WriteableRenderTile) tile;
 
                 do {
                     boolean complete = true;

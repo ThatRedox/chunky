@@ -1,8 +1,8 @@
 package se.llbit.chunky.renderer.renderdump;
 
 import se.llbit.chunky.renderer.scene.Scene;
-import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
-import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
+import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderBuffer;
+import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderTile;
 import se.llbit.util.TaskTracker;
 
 import java.io.DataInputStream;
@@ -21,11 +21,11 @@ public abstract class AbstractTiledDumpFormat implements DumpFormat {
      */
     public static final int TILE_SIZE = 128;
 
-    public static class TileIterable implements Iterable<RenderTile> {
-        protected final RenderBuffer buffer;
+    public static class TileIterable implements Iterable<WriteableRenderTile> {
+        protected final WriteableRenderBuffer buffer;
         protected final int tileSize;
 
-        public TileIterable(RenderBuffer buffer, int tileSize) {
+        public TileIterable(WriteableRenderBuffer buffer, int tileSize) {
             this.buffer = buffer;
             this.tileSize = tileSize;
         }
@@ -40,20 +40,20 @@ public abstract class AbstractTiledDumpFormat implements DumpFormat {
         }
 
         @Override
-        public Iterator<RenderTile> iterator() {
-            return new Iterator<RenderTile>() {
+        public Iterator<WriteableRenderTile> iterator() {
+            return new Iterator<WriteableRenderTile>() {
                 private int x = 0;
                 private int y = 0;
 
-                private Future<RenderTile> tileFuture = nextTile();
+                private Future<? extends WriteableRenderTile> tileFuture = nextTile();
 
-                private Future<RenderTile> nextTile() {
+                private Future<? extends WriteableRenderTile> nextTile() {
                     int tileW = Math.min(TILE_SIZE, buffer.getWidth() - x);
                     int tileH = Math.min(TILE_SIZE, buffer.getHeight() - y);
                     if (y >= buffer.getHeight()) {
                         return null;
                     }
-                    Future<RenderTile> tile = buffer.getTile(x, y, tileW, tileH);
+                    Future<? extends WriteableRenderTile> tile = buffer.getTile(x, y, tileW, tileH);
 
                     x += TILE_SIZE;
                     if (x >= buffer.getWidth()) {
@@ -69,10 +69,10 @@ public abstract class AbstractTiledDumpFormat implements DumpFormat {
                 }
 
                 @Override
-                public RenderTile next() {
+                public WriteableRenderTile next() {
                     if (tileFuture != null) {
                         try {
-                            RenderTile tile = tileFuture.get();
+                            WriteableRenderTile tile = tileFuture.get();
                             tileFuture = nextTile();
                             return tile;
                         } catch (InterruptedException | ExecutionException e) {
