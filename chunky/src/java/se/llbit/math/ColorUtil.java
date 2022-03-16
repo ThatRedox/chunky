@@ -220,6 +220,16 @@ public final class ColorUtil {
   }
 
   /**
+   * @return Get the clamped INT RGB value corresponding to the given color
+   */
+  public static int getRGBClamped(Vector3 rgb) {
+    return 0xFF000000 |
+        ((int) QuickMath.clamp(255 * rgb.x + .5, 0, 255) << 16) |
+        ((int) QuickMath.clamp(255 * rgb.y + .5, 0, 255) << 8) |
+        ((int) QuickMath.clamp(255 * rgb.z + .5, 0, 255));
+  }
+
+  /**
    * Transform from xyY colorspace to XYZ colorspace.
    */
   public static void xyYtoXYZ(Vector3 in, Vector3 out) {

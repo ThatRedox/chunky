@@ -27,6 +27,7 @@ import javafx.util.StringConverter;
 import se.llbit.chunky.renderer.postprocessing.PostProcessingFilter;
 import se.llbit.chunky.renderer.postprocessing.PostProcessingFilters;
 import se.llbit.chunky.renderer.scene.Scene;
+import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.resources.BitmapImage;
 import se.llbit.chunky.ui.DoubleAdjuster;
 import se.llbit.chunky.ui.controller.RenderControlsFxController;
@@ -114,13 +115,18 @@ public class PostprocessingTab extends ScrollPane implements RenderControlsTab, 
   private static class PostprocessingSeparator extends Separator implements PostProcessingFilter {
 
     @Override
-    public void processFrame(int width, int height, double[] input, BitmapImage output,
-        double exposure, Task task) {
+    public String getName() {
+      return "";
     }
 
     @Override
-    public String getName() {
+    public String getDescription() {
       return "";
+    }
+
+    @Override
+    public void processFrame(RenderBuffer input, BitmapImage output, double exposure, Task task) {
+
     }
   }
 }

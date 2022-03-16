@@ -21,11 +21,18 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.concurrent.Future;
+
 import se.llbit.chunky.renderer.postprocessing.PixelPostProcessingFilter;
 import se.llbit.chunky.renderer.postprocessing.PostProcessingFilter;
 import se.llbit.chunky.renderer.postprocessing.PostProcessingFilters;
 import se.llbit.chunky.renderer.scene.Scene;
+import se.llbit.chunky.renderer.scene.renderbuffer.Pixel;
+import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
+import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
+import se.llbit.chunky.renderer.scene.renderbuffer.iteration.RenderBufferRowMajorIterator;
 import se.llbit.log.Log;
+import se.llbit.math.Vector3;
 import se.llbit.util.TaskTracker;
 
 /**
@@ -228,6 +235,8 @@ public class TiffFileWriter implements AutoCloseable {
           "The TIFF will be exported without post-processing instead.");
       filter = PostProcessingFilters.NONE;
     }
+    PixelPostProcessingFilter pixelFilter = (PixelPostProcessingFilter) filter;
+    RenderBufferRowMajorIterator iter = new RenderBufferRowMajorIterator(scene.getRenderBuffer());
 
     int width = scene.canvasWidth();
     int height = scene.canvasHeight();
@@ -236,12 +245,13 @@ public class TiffFileWriter implements AutoCloseable {
     for (int y = 0; y < height; ++y) {
       task.update(height, y);
       for (int x = 0; x < width; ++x) {
-        double[] pixel = new double[3];
-        ((PixelPostProcessingFilter) filter)
-            .processPixel(width, height, scene.getSampleBuffer(), x, y, scene.getExposure(), pixel);
-        out.writeFloat((float) pixel[0]);
-        out.writeFloat((float) pixel[1]);
-        out.writeFloat((float) pixel[2]);
+        assert iter.hasNext();
+        Pixel pixel = iter.next();
+        pixelFilter.processPixel(pixel, scene.getExposure());
+
+        out.writeFloat((float) pixel.color.x);
+        out.writeFloat((float) pixel.color.y);
+        out.writeFloat((float) pixel.color.z);
       }
       task.update(height, y + 1);
     }

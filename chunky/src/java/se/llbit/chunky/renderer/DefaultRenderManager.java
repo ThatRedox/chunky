@@ -19,7 +19,6 @@ package se.llbit.chunky.renderer;
 
 import se.llbit.chunky.PersistentSettings;
 import se.llbit.chunky.plugin.PluginApi;
-import se.llbit.chunky.renderer.postprocessing.PixelPostProcessingFilter;
 import se.llbit.chunky.renderer.postprocessing.PostProcessingFilter;
 import se.llbit.chunky.renderer.postprocessing.PreviewFilter;
 import se.llbit.chunky.renderer.scene.PathTracer;
@@ -27,7 +26,6 @@ import se.llbit.chunky.renderer.scene.PreviewRayTracer;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.resources.BitmapImage;
 import se.llbit.log.Log;
-import se.llbit.math.ColorUtil;
 import se.llbit.util.TaskTracker;
 
 import java.util.*;
@@ -414,48 +412,7 @@ public class DefaultRenderManager extends Thread implements RenderManager {
     if (force || snapshotControl.saveSnapshot(bufferedScene, bufferedScene.spp)) {
       PostProcessingFilter filter = bufferedScene.getPostProcessingFilter();
       if (mode == RenderMode.PREVIEW) filter = PreviewFilter.INSTANCE;
-
-      if (filter instanceof PixelPostProcessingFilter) {
-        PixelPostProcessingFilter pixelFilter = (PixelPostProcessingFilter) filter;
-
-        int width = bufferedScene.width;
-        int height = bufferedScene.height;
-        double[] sampleBuffer = bufferedScene.getSampleBuffer();
-        double exposure = bufferedScene.getExposure();
-
-        // Split up to 10 tasks per thread
-        int tasksPerThread = 10;
-        int pixelsPerTask = (bufferedScene.width * bufferedScene.height) / (pool.threads * tasksPerThread - 1);
-        ArrayList<RenderWorkerPool.RenderJobFuture> jobs = new ArrayList<>(pool.threads * tasksPerThread);
-
-        for (int i = 0; i < bufferedScene.width * bufferedScene.height; i += pixelsPerTask) {
-          int start = i;
-          int end = Math.min(bufferedScene.width * bufferedScene.height, i + pixelsPerTask);
-          jobs.add(pool.submit(worker -> {
-            double[] pixelbuffer = new double[3];
-
-            for (int j = start; j < end; j++) {
-              int x = j % width;
-              int y = j / width;
-
-              pixelFilter.processPixel(width, height, sampleBuffer, x, y, exposure, pixelbuffer);
-              Arrays.setAll(pixelbuffer, k -> Math.min(1, pixelbuffer[k]));
-              bufferedScene.getBackBuffer().setPixel(x, y, ColorUtil.getRGB(pixelbuffer));
-            }
-          }));
-        }
-
-        try {
-          for (RenderWorkerPool.RenderJobFuture job : jobs) {
-            job.awaitFinish();
-          }
-        } catch (InterruptedException e) {
-          // Interrupted
-        }
-      } else {
-        bufferedScene.postProcessFrame(TaskTracker.Task.NONE);
-      }
-
+      filter.processFrame(bufferedScene.getRenderBuffer(), bufferedScene.getBackBuffer(), bufferedScene.getExposure(), TaskTracker.Task.NONE);
       redrawScreen();
     }
   }

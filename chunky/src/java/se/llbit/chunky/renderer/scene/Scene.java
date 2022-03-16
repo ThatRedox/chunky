@@ -2105,7 +2105,7 @@ public class Scene implements JsonSerializable, Refreshable {
       filter = PreviewFilter.INSTANCE;
     }
     RenderPreview preview = getRenderBuffer().getPreview();
-    filter.processFrame(preview.getWidth(), preview.getHeight(), preview.getPreview().asDoubleArray(), backBuffer, exposure, task);
+    filter.processFrame(preview, backBuffer, exposure, task);
     finalized = true;
   }
 

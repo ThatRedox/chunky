@@ -25,6 +25,7 @@ import se.llbit.chunky.resources.BitmapImage;
 import se.llbit.math.ColorUtil;
 import se.llbit.math.QuickMath;
 import se.llbit.math.Ray;
+import se.llbit.math.Vector3;
 import se.llbit.util.TaskTracker;
 
 import java.util.Random;
@@ -93,7 +94,7 @@ public class PreviewRenderer implements Renderer {
         WorkerState state = new WorkerState();
         state.ray = new Ray();
         state.random = new Random(0);
-        double[] pixel = new double[3];
+        Vector3 pixel = new Vector3();
 
         for (int x = 0; x < backBuffer.width; x++) {
             for (int y = 0; y < backBuffer.height; y++) {
@@ -121,14 +122,9 @@ public class PreviewRenderer implements Renderer {
                     state.ray.color.w = 1;
                 }
 
-                pixel[0] = state.ray.color.x;
-                pixel[1] = state.ray.color.y;
-                pixel[2] = state.ray.color.z;
+                pixel.set(state.ray.color.x, state.ray.color.y, state.ray.color.z);
                 PreviewFilter.INSTANCE.processPixel(pixel);
-                data[offset] = ColorUtil.getArgb(
-                    QuickMath.clamp(pixel[0], 0, 1),
-                    QuickMath.clamp(pixel[1], 0, 1),
-                    QuickMath.clamp(pixel[2], 0, 1), 1);
+                data[offset] = ColorUtil.getRGBClamped(pixel);
             }
         }
 
