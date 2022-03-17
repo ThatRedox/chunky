@@ -14,4 +14,10 @@ public class Pixel {
         this.bufferX = bufferX;
         this.bufferY = bufferY;
     }
+
+    public static Pixel fromTile(RenderTile tile, int bufferX, int bufferY) {
+        Vector3 color = new Vector3();
+        int samples = tile.getColor(bufferX, bufferY, color);
+        return new Pixel(color, samples, bufferX, bufferY);
+    }
 }

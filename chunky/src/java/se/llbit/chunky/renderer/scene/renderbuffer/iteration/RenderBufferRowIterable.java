@@ -9,7 +9,7 @@ import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-public class RenderBufferRowMajorIterator implements Iterator<Pixel> {
+public class RenderBufferRowIterable implements Iterator<Pixel> {
     protected RenderBuffer buffer;
     protected Future<? extends RenderTile> tileFuture;
     protected RenderTile tile;
@@ -17,7 +17,7 @@ public class RenderBufferRowMajorIterator implements Iterator<Pixel> {
     protected int y = 0;
     protected int bufferY = 0;
 
-    public RenderBufferRowMajorIterator(RenderBuffer buffer) {
+    public RenderBufferRowIterable(RenderBuffer buffer) {
         this.buffer = buffer;
         try {
             this.tile = buffer.getTile(0, 0, buffer.getWidth(), Math.min(RenderBuffer.TILE_SIZE, buffer.getHeight())).get();

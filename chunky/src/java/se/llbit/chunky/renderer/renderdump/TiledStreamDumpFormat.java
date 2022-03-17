@@ -5,6 +5,7 @@ import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
 import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderTile;
+import se.llbit.chunky.renderer.scene.renderbuffer.iteration.RenderBufferIterable;
 import se.llbit.log.Log;
 import se.llbit.math.Vector3;
 import se.llbit.util.IsolatedOutputStream;
@@ -102,16 +103,13 @@ public class TiledStreamDumpFormat extends AbstractTiledDumpFormat {
     }
 
     @Override
-    protected void writeTiles(DataOutputStream outputStream, Scene scene, TileIterable tiles, TaskTracker.Task progress) throws IOException {
+    protected void writeTiles(DataOutputStream outputStream, Scene scene, RenderBufferIterable<WriteableRenderTile> tiles, TaskTracker.Task progress) throws IOException {
         Vector3 color = new Vector3();
         long tilesComplete = 0;
         long numTiles = tiles.numTiles();
         progress.update((int) numTiles, (int) tilesComplete);
 
         try (DataOutputStream out = new DataOutputStream(outputStreamSupplier.apply(new IsolatedOutputStream(outputStream)))) {
-            // Write number of tiles
-            out.writeLong(numTiles);
-
             for (RenderTile tile : tiles) {
                 // Write tile coordinates
                 out.writeInt(tile.getBufferX(0));

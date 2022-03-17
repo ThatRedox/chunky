@@ -21,18 +21,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.concurrent.Future;
 
 import se.llbit.chunky.renderer.postprocessing.PixelPostProcessingFilter;
 import se.llbit.chunky.renderer.postprocessing.PostProcessingFilter;
 import se.llbit.chunky.renderer.postprocessing.PostProcessingFilters;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.renderer.scene.renderbuffer.Pixel;
-import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
-import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
-import se.llbit.chunky.renderer.scene.renderbuffer.iteration.RenderBufferRowMajorIterator;
+import se.llbit.chunky.renderer.scene.renderbuffer.iteration.RenderBufferRowIterable;
 import se.llbit.log.Log;
-import se.llbit.math.Vector3;
 import se.llbit.util.TaskTracker;
 
 /**
@@ -236,7 +232,7 @@ public class TiffFileWriter implements AutoCloseable {
       filter = PostProcessingFilters.NONE;
     }
     PixelPostProcessingFilter pixelFilter = (PixelPostProcessingFilter) filter;
-    RenderBufferRowMajorIterator iter = new RenderBufferRowMajorIterator(scene.getRenderBuffer());
+    RenderBufferRowIterable iter = new RenderBufferRowIterable(scene.getRenderBuffer());
 
     int width = scene.canvasWidth();
     int height = scene.canvasHeight();

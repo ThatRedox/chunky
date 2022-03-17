@@ -1,94 +1,22 @@
 package se.llbit.chunky.renderer.renderdump;
 
 import se.llbit.chunky.renderer.scene.Scene;
-import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderTile;
+import se.llbit.chunky.renderer.scene.renderbuffer.iteration.RenderBufferIterable;
 import se.llbit.util.TaskTracker;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * This is the newest dump format. This stores samples in a tiled format.
  */
 public abstract class AbstractTiledDumpFormat implements DumpFormat {
-    /**
-     * Size of each tile written to disk.
-     */
-    public static final int TILE_SIZE = 128;
-
-    public static class TileIterable implements Iterable<WriteableRenderTile> {
-        protected final WriteableRenderBuffer buffer;
-        protected final int tileSize;
-
-        public TileIterable(WriteableRenderBuffer buffer, int tileSize) {
-            this.buffer = buffer;
-            this.tileSize = tileSize;
-        }
-
-        public long numTiles() {
-            long tilesV = buffer.getHeight() / tileSize;
-            if (buffer.getHeight() % tileSize != 0) tilesV++;
-            long tilesH = buffer.getWidth() / tileSize;
-            if (buffer.getWidth() % tileSize != 0) tilesH++;
-
-            return tilesV * tilesH;
-        }
-
-        @Override
-        public Iterator<WriteableRenderTile> iterator() {
-            return new Iterator<WriteableRenderTile>() {
-                private int x = 0;
-                private int y = 0;
-
-                private Future<? extends WriteableRenderTile> tileFuture = nextTile();
-
-                private Future<? extends WriteableRenderTile> nextTile() {
-                    int tileW = Math.min(TILE_SIZE, buffer.getWidth() - x);
-                    int tileH = Math.min(TILE_SIZE, buffer.getHeight() - y);
-                    if (y >= buffer.getHeight()) {
-                        return null;
-                    }
-                    Future<? extends WriteableRenderTile> tile = buffer.getTile(x, y, tileW, tileH);
-
-                    x += TILE_SIZE;
-                    if (x >= buffer.getWidth()) {
-                        x = 0;
-                        y += TILE_SIZE;
-                    }
-                    return tile;
-                }
-
-                @Override
-                public boolean hasNext() {
-                    return tileFuture != null;
-                }
-
-                @Override
-                public WriteableRenderTile next() {
-                    if (tileFuture != null) {
-                        try {
-                            WriteableRenderTile tile = tileFuture.get();
-                            tileFuture = nextTile();
-                            return tile;
-                        } catch (InterruptedException | ExecutionException e) {
-                            throw new RuntimeException(e);
-                        }
-                    } else {
-                        throw new IllegalStateException("Attempted to iterate past the end of the tile iterator.");
-                    }
-                }
-            };
-        }
-    }
 
     protected abstract void readTiles(DataInputStream inputStream, Scene scene, boolean merge, TaskTracker.Task progress) throws IOException;
 
-    protected abstract void writeTiles(DataOutputStream outputStream, Scene scene, TileIterable tiles, TaskTracker.Task progress) throws IOException;
+    protected abstract void writeTiles(DataOutputStream outputStream, Scene scene, RenderBufferIterable<WriteableRenderTile> tiles, TaskTracker.Task progress) throws IOException;
 
     public abstract int getVersion();
 
@@ -110,8 +38,8 @@ public abstract class AbstractTiledDumpFormat implements DumpFormat {
     public void save(DataOutputStream outputStream, Scene scene, TaskTracker taskTracker)
         throws IOException {
         try (TaskTracker.Task task = taskTracker.task("Saving render dump", scene.width * scene.height)) {
-            TileIterable tiles = new TileIterable(scene.getRenderBuffer(), TILE_SIZE);
-            writeHeader(outputStream, scene);
+            RenderBufferIterable<WriteableRenderTile> tiles = RenderBufferIterable.write(scene.getRenderBuffer());
+            writeHeader(outputStream, scene, tiles.numTiles());
             writeTiles(outputStream, scene, tiles, task);
         }
     }
@@ -135,9 +63,10 @@ public abstract class AbstractTiledDumpFormat implements DumpFormat {
         scene.renderTime = inputStream.readLong();
     }
 
-    static void writeHeader(DataOutputStream outputStream, Scene scene) throws IOException {
+    static void writeHeader(DataOutputStream outputStream, Scene scene, long numTiles) throws IOException {
         outputStream.writeInt(scene.width);
         outputStream.writeInt(scene.height);
         outputStream.writeLong(scene.renderTime);
+        outputStream.writeLong(numTiles);
     }
 }

@@ -122,6 +122,10 @@ public abstract class TileBasedRenderer implements Renderer {
             Tile nextTile = tilesQueue.poll();
             if (nextTile == null) return;
             Future<? extends RenderTile> tileFuture = nextTile.getTile(manager.bufferedScene.getRenderBuffer());
+            WorkerState state = new WorkerState();
+            state.ray = new Ray();
+            state.ray.setNormal(0, 0, -1);
+            state.random = worker.random;
 
             while (tileFuture != null) {
                 Tile managerTile = nextTile;
@@ -129,11 +133,6 @@ public abstract class TileBasedRenderer implements Renderer {
 
                 nextTile = tilesQueue.poll();
                 tileFuture = nextTile == null ? null : nextTile.getTile(manager.bufferedScene.getRenderBuffer());
-
-                WorkerState state = new WorkerState();
-                state.ray = new Ray();
-                state.ray.setNormal(0, 0, -1);
-                state.random = worker.random;
                 state.tile = (WriteableRenderTile) tile;
 
                 do {
