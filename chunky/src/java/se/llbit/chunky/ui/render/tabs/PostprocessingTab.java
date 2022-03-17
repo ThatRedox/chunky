@@ -27,6 +27,7 @@ import javafx.util.StringConverter;
 import se.llbit.chunky.renderer.postprocessing.PostProcessingFilter;
 import se.llbit.chunky.renderer.postprocessing.PostProcessingFilters;
 import se.llbit.chunky.renderer.scene.Scene;
+import se.llbit.chunky.renderer.scene.imagebuffer.ImageBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.resources.BitmapImage;
 import se.llbit.chunky.ui.DoubleAdjuster;
@@ -125,7 +126,7 @@ public class PostprocessingTab extends ScrollPane implements RenderControlsTab, 
     }
 
     @Override
-    public void processFrame(RenderBuffer input, BitmapImage output, double exposure, Task task) {
+    public void processFrame(RenderBuffer input, ImageBuffer output, double exposure, Task task) {
 
     }
   }

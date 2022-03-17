@@ -17,7 +17,6 @@
 package se.llbit.chunky.renderer;
 
 import org.apache.commons.math3.util.FastMath;
-import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
 import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderTile;

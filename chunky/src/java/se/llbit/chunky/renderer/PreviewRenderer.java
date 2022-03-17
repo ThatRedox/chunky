@@ -21,9 +21,8 @@ import se.llbit.chunky.renderer.postprocessing.PreviewFilter;
 import se.llbit.chunky.renderer.scene.Camera;
 import se.llbit.chunky.renderer.scene.RayTracer;
 import se.llbit.chunky.renderer.scene.Scene;
-import se.llbit.chunky.resources.BitmapImage;
+import se.llbit.chunky.renderer.scene.imagebuffer.BitmapImageBuffer;
 import se.llbit.math.ColorUtil;
-import se.llbit.math.QuickMath;
 import se.llbit.math.Ray;
 import se.llbit.math.Vector3;
 import se.llbit.util.TaskTracker;
@@ -88,16 +87,16 @@ public class PreviewRenderer implements Renderer {
         int ty = (int) Math.floor(target.o.y + target.d.y * Ray.OFFSET);
         int tz = (int) Math.floor(target.o.z + target.d.z * Ray.OFFSET);
 
-        BitmapImage backBuffer = scene.getBackBuffer();
-        int[] data = backBuffer.data;
+        BitmapImageBuffer backBuffer = scene.getBackImageBuffer();
+        int[] data = backBuffer.getBitmap().data;
 
         WorkerState state = new WorkerState();
         state.ray = new Ray();
         state.random = new Random(0);
         Vector3 pixel = new Vector3();
 
-        for (int x = 0; x < backBuffer.width; x++) {
-            for (int y = 0; y < backBuffer.height; y++) {
+        for (int x = 0; x < backBuffer.getWidth(); x++) {
+            for (int y = 0; y < backBuffer.getHeight(); y++) {
                 int offset = x + y*width;
 
                 if (x == width / 2 && (y >= height / 2 - 5 && y <= height / 2 + 5) ||

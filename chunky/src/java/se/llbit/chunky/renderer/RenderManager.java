@@ -18,6 +18,7 @@
 package se.llbit.chunky.renderer;
 
 import se.llbit.chunky.renderer.scene.Scene;
+import se.llbit.chunky.renderer.scene.imagebuffer.BitmapImageBuffer;
 import se.llbit.chunky.resources.BitmapImage;
 import se.llbit.util.Registerable;
 import se.llbit.util.TaskTracker;
@@ -92,7 +93,7 @@ public interface RenderManager {
   /**
    * Run something with the buffered image (unsynchronized).
    */
-  void withBufferedImage(Consumer<BitmapImage> bitmap);
+  void withBufferedImage(Consumer<BitmapImageBuffer> bitmap);
 
   /**
    * Add a listener for the scene status tooltip.

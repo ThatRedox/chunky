@@ -69,6 +69,8 @@ import se.llbit.chunky.renderer.postprocessing.PostProcessingFilter;
 import se.llbit.chunky.renderer.postprocessing.PostProcessingFilters;
 import se.llbit.chunky.renderer.postprocessing.PreviewFilter;
 import se.llbit.chunky.renderer.renderdump.RenderDump;
+import se.llbit.chunky.renderer.scene.imagebuffer.BitmapImageBuffer;
+import se.llbit.chunky.renderer.scene.imagebuffer.ImageBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.*;
 import se.llbit.chunky.resources.BitmapImage;
 import se.llbit.chunky.resources.OctreeFileFormat;
@@ -331,9 +333,8 @@ public class Scene implements JsonSerializable, Refreshable {
   private WorldTexture waterTexture = new WorldTexture();
 
   /** This is the 8-bit channel frame buffer. */
-  protected BitmapImage frontBuffer;
-
-  private BitmapImage backBuffer;
+  private BitmapImageBuffer frontBuffer;
+  private BitmapImageBuffer backBuffer;
 
   /**
    * HDR sample buffer for the render output.
@@ -431,8 +432,8 @@ public class Scene implements JsonSerializable, Refreshable {
    * scene and after scene canvas size changes.
    */
   public synchronized void initBuffers() {
-    frontBuffer = new BitmapImage(width, height);
-    backBuffer = new BitmapImage(width, height);
+    frontBuffer = new BitmapImageBuffer(width, height, true);
+    backBuffer = new BitmapImageBuffer(width, height, true);
     alphaChannel = new byte[width * height];
     samples = new DoubleArrayRenderBuffer(width, height);
   }
@@ -2379,7 +2380,7 @@ public class Scene implements JsonSerializable, Refreshable {
    */
   public synchronized void swapBuffers() {
     finalized = false;
-    BitmapImage tmp = frontBuffer;
+    BitmapImageBuffer tmp = frontBuffer;
     frontBuffer = backBuffer;
     backBuffer = tmp;
   }
@@ -2387,7 +2388,7 @@ public class Scene implements JsonSerializable, Refreshable {
   /**
    * Call the consumer with the current front frame buffer.
    */
-  public synchronized void withBufferedImage(Consumer<BitmapImage> consumer) {
+  public synchronized void withBufferedImage(Consumer<BitmapImageBuffer> consumer) {
     if (frontBuffer != null) {
       consumer.accept(frontBuffer);
     }
@@ -2419,7 +2420,15 @@ public class Scene implements JsonSerializable, Refreshable {
    * Get the back buffer of the current frame (in ARGB format).
    * @return Back buffer
    */
+  @Deprecated
   public BitmapImage getBackBuffer() {
+    return backBuffer.getBitmap();
+  }
+
+  /**
+   * Get the back buffer of the current frame.
+   */
+  public BitmapImageBuffer getBackImageBuffer() {
     return backBuffer;
   }
 

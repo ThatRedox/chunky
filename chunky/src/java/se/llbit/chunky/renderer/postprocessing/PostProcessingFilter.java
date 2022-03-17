@@ -1,8 +1,8 @@
 package se.llbit.chunky.renderer.postprocessing;
 
 import se.llbit.chunky.plugin.PluginApi;
+import se.llbit.chunky.renderer.scene.imagebuffer.ImageBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
-import se.llbit.chunky.resources.BitmapImage;
 import se.llbit.util.Registerable;
 import se.llbit.util.TaskTracker;
 
@@ -24,5 +24,5 @@ public interface PostProcessingFilter extends Registerable {
      * @param exposure The exposure value
      * @param task Task
      */
-    void processFrame(RenderBuffer input, BitmapImage output, double exposure, TaskTracker.Task task);
+    void processFrame(RenderBuffer input, ImageBuffer output, double exposure, TaskTracker.Task task);
 }

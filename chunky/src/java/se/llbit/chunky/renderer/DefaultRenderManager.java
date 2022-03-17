@@ -24,6 +24,7 @@ import se.llbit.chunky.renderer.postprocessing.PreviewFilter;
 import se.llbit.chunky.renderer.scene.PathTracer;
 import se.llbit.chunky.renderer.scene.PreviewRayTracer;
 import se.llbit.chunky.renderer.scene.Scene;
+import se.llbit.chunky.renderer.scene.imagebuffer.BitmapImageBuffer;
 import se.llbit.chunky.resources.BitmapImage;
 import se.llbit.log.Log;
 import se.llbit.util.TaskTracker;
@@ -412,7 +413,7 @@ public class DefaultRenderManager extends Thread implements RenderManager {
     if (force || snapshotControl.saveSnapshot(bufferedScene, bufferedScene.spp)) {
       PostProcessingFilter filter = bufferedScene.getPostProcessingFilter();
       if (mode == RenderMode.PREVIEW) filter = PreviewFilter.INSTANCE;
-      filter.processFrame(bufferedScene.getRenderBuffer(), bufferedScene.getBackBuffer(), bufferedScene.getExposure(), TaskTracker.Task.NONE);
+      filter.processFrame(bufferedScene.getRenderBuffer(), bufferedScene.getBackImageBuffer(), bufferedScene.getExposure(), TaskTracker.Task.NONE);
       redrawScreen();
     }
   }
@@ -458,7 +459,7 @@ public class DefaultRenderManager extends Thread implements RenderManager {
    * Call the consumer with the current front frame buffer.
    */
   @Override
-  public void withBufferedImage(Consumer<BitmapImage> consumer) {
+  public void withBufferedImage(Consumer<BitmapImageBuffer> consumer) {
     bufferedScene.withBufferedImage(consumer);
   }
 

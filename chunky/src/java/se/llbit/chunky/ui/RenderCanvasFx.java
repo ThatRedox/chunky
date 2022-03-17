@@ -51,6 +51,8 @@ import se.llbit.chunky.renderer.*;
 import se.llbit.chunky.renderer.RenderManager;
 import se.llbit.chunky.renderer.scene.Camera;
 import se.llbit.chunky.renderer.scene.Scene;
+import se.llbit.chunky.renderer.scene.imagebuffer.BitmapImageBuffer;
+import se.llbit.chunky.resources.BitmapImage;
 import se.llbit.math.Vector2;
 
 import java.nio.IntBuffer;
@@ -386,7 +388,8 @@ public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStat
 
   public void forceRepaint() {
     painting.set(true);
-    renderManager.withBufferedImage(bitmap -> {
+    renderManager.withBufferedImage(img -> {
+      BitmapImage bitmap = img.getBitmap();
       if (bitmap.width == (int) image.getWidth()
           && bitmap.height == (int) image.getHeight()) {
         image.getPixelWriter().setPixels(0, 0, bitmap.width, bitmap.height, PIXEL_FORMAT,

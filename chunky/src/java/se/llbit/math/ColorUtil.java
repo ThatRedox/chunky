@@ -94,6 +94,16 @@ public final class ColorUtil {
   }
 
   /**
+   * @return Get the clamped INT RGB value corresponding to the given color
+   */
+  public static int getArgbClamped(double r, double g, double b, double a) {
+    return ((int) QuickMath.clamp(255 * a + .5f, 0, 255) << 24) |
+           ((int) QuickMath.clamp(255 * r + .5f, 0, 255) << 16) |
+           ((int) QuickMath.clamp(255 * g + .5f, 0, 255) << 8) |
+           ((int) QuickMath.clamp(255 * b + .5f, 0, 255));
+  }
+
+  /**
    * @param c RGB color vector
    * @return INT RGB value corresponding to the given color vector
    */
