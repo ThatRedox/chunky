@@ -17,6 +17,7 @@
 package se.llbit.chunky.renderer;
 
 import org.apache.commons.math3.util.FastMath;
+import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
 import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderTile;
@@ -69,12 +70,13 @@ public abstract class TileBasedRenderer implements Renderer {
         postRender = callback;
     }
 
-    @Override
-    public void render(DefaultRenderManager manager) throws InterruptedException {
+    /**
+     * Initiate the tiles. This must be called before attempting to render.
+     */
+    protected void initTiles(RenderBuffer buffer, int tileWidth) {
         tiles.clear();
-        int width = manager.bufferedScene.getRenderBuffer().getWidth();
-        int height = manager.bufferedScene.getRenderBuffer().getHeight();
-        int tileWidth = manager.context.tileWidth();
+        int width = buffer.getWidth();
+        int height = buffer.getHeight();
 
         for (int i = 0; i < width; i += tileWidth) {
             for (int j = 0; j < height; j += tileWidth) {
@@ -82,11 +84,7 @@ public abstract class TileBasedRenderer implements Renderer {
                     j, FastMath.min(j + tileWidth, height)));
             }
         }
-
-        doRender(manager);
     }
-
-    public abstract void doRender(DefaultRenderManager manager) throws InterruptedException;
 
     /**
      * Create and submit tiles to the rendering pool.
@@ -97,7 +95,7 @@ public abstract class TileBasedRenderer implements Renderer {
      *                 been rendered to completion.
      * @return Total samples rendered so far.
      */
-    protected long renderTiles(DefaultRenderManager manager, Predicate<WorkerState> perPixel) {
+    protected long renderTiles(DefaultRenderManager manager, WriteableRenderBuffer buffer, Predicate<WorkerState> perPixel) {
         if (tilesQueue != null) {
             tilesQueue.clear();
         }
@@ -120,7 +118,7 @@ public abstract class TileBasedRenderer implements Renderer {
         IntStream.range(0, manager.pool.threads).mapToObj(i -> manager.pool.submit(worker -> {
             Tile nextTile = tilesQueue.poll();
             if (nextTile == null) return;
-            Future<? extends RenderTile> tileFuture = nextTile.getTile(manager.bufferedScene.getRenderBuffer());
+            Future<? extends RenderTile> tileFuture = nextTile.getTile(buffer);
             WorkerState state = new WorkerState();
             state.ray = new Ray();
             state.ray.setNormal(0, 0, -1);
@@ -128,11 +126,11 @@ public abstract class TileBasedRenderer implements Renderer {
 
             while (tileFuture != null) {
                 Tile managerTile = nextTile;
-                RenderTile tile = tileFuture.get();
+                WriteableRenderTile tile = (WriteableRenderTile) tileFuture.get();
 
                 nextTile = tilesQueue.poll();
-                tileFuture = nextTile == null ? null : nextTile.getTile(manager.bufferedScene.getRenderBuffer());
-                state.tile = (WriteableRenderTile) tile;
+                tileFuture = nextTile == null ? null : nextTile.getTile(buffer);
+                state.tile = tile;
 
                 do {
                     boolean complete = true;
@@ -162,6 +160,7 @@ public abstract class TileBasedRenderer implements Renderer {
                     managerTile.sampleCount = sum;
                 }
                 samplesCount.addAndGet(sum);
+                tile.close();
             }
         })).collect(Collectors.toList()).forEach(j -> {
             try {

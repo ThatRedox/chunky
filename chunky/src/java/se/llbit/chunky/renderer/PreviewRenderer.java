@@ -21,16 +21,11 @@ import se.llbit.chunky.renderer.postprocessing.PreviewFilter;
 import se.llbit.chunky.renderer.scene.Camera;
 import se.llbit.chunky.renderer.scene.RayTracer;
 import se.llbit.chunky.renderer.scene.Scene;
-import se.llbit.chunky.renderer.scene.imagebuffer.BitmapImageBuffer;
-import se.llbit.math.ColorUtil;
+import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.math.Ray;
-import se.llbit.math.Vector3;
 import se.llbit.util.TaskTracker;
 
-import java.util.Random;
-import java.util.function.BooleanSupplier;
-
-public class PreviewRenderer implements Renderer {
+public class PreviewRenderer extends TileBasedRenderer {
     protected final String id;
     protected final String name;
     protected final String description;
@@ -59,11 +54,6 @@ public class PreviewRenderer implements Renderer {
     }
 
     @Override
-    public void setPostRender(BooleanSupplier callback) {
-
-    }
-
-    @Override
     public boolean autoPostProcess() {
         return false;
     }
@@ -73,9 +63,12 @@ public class PreviewRenderer implements Renderer {
         TaskTracker.Task task = manager.getRenderTask();
         task.update("Preview", 2, 0, "");
 
+        RenderPreview<?> preview = manager.getPreview();
+        initTiles(preview.getPreview(), RenderBuffer.TILE_SIZE);
+
         Scene scene = manager.bufferedScene;
-        int width = scene.width;
-        int height = scene.height;
+        int width = preview.getPreview().getWidth();
+        int height = preview.getPreview().getHeight();
 
         Camera cam = scene.camera();
         double halfWidth = width / (2.0 * height);
@@ -87,47 +80,37 @@ public class PreviewRenderer implements Renderer {
         int ty = (int) Math.floor(target.o.y + target.d.y * Ray.OFFSET);
         int tz = (int) Math.floor(target.o.z + target.d.z * Ray.OFFSET);
 
-        BitmapImageBuffer backBuffer = scene.getBackImageBuffer();
-        int[] data = backBuffer.getBitmap().data;
-
-        WorkerState state = new WorkerState();
-        state.ray = new Ray();
-        state.random = new Random(0);
-        Vector3 pixel = new Vector3();
-
-        for (int x = 0; x < backBuffer.getWidth(); x++) {
-            for (int y = 0; y < backBuffer.getHeight(); y++) {
-                int offset = x + y*width;
-
-                if (x == width / 2 && (y >= height / 2 - 5 && y <= height / 2 + 5) ||
-                    y == height / 2 && (x >= width / 2 - 5 && x <= width / 2 + 5)) {
-
-                    data[offset] = 0xFFFFFFFF;
-                    continue;
-                }
-
-                cam.calcViewRay(state.ray, state.random,
-                    -halfWidth + x * invHeight,
-                    -0.5 + y * invHeight);
-                scene.rayTrace(tracer, state);
-
-                int rx = (int) Math.floor(state.ray.o.x + state.ray.d.x * Ray.OFFSET);
-                int ry = (int) Math.floor(state.ray.o.y + state.ray.d.y * Ray.OFFSET);
-                int rz = (int) Math.floor(state.ray.o.z + state.ray.d.z * Ray.OFFSET);
-                if (hit && tx == rx && ty == ry && tz == rz) {
-                    state.ray.color.x = 1 - state.ray.color.x;
-                    state.ray.color.y = 1 - state.ray.color.y;
-                    state.ray.color.z = 1 - state.ray.color.z;
-                    state.ray.color.w = 1;
-                }
-
-                pixel.set(state.ray.color.x, state.ray.color.y, state.ray.color.z);
-                PreviewFilter.INSTANCE.processPixel(pixel);
-                data[offset] = ColorUtil.getRGBClamped(pixel);
+        renderTiles(manager, preview.getPreview(), state -> {
+            if (state.x == width / 2 && (state.y >= height / 2 - 5 && state.y <= height / 2 + 5) ||
+                state.y == height / 2 && (state.x >= width / 2 - 5 && state.x <= width / 2 + 5)) {
+                state.tile.setPixel(state.x, state.y, 1, 1, 1, 1);
+                return true;
             }
-        }
 
-        task.update(1, 1);
+            cam.calcViewRay(state.ray, state.random,
+                -halfWidth + state.x * invHeight,
+                -0.5 + state.y * invHeight);
+            scene.rayTrace(tracer, state);
+
+            int rx = (int) Math.floor(state.ray.o.x + state.ray.d.x * Ray.OFFSET);
+            int ry = (int) Math.floor(state.ray.o.y + state.ray.d.y * Ray.OFFSET);
+            int rz = (int) Math.floor(state.ray.o.z + state.ray.d.z * Ray.OFFSET);
+            if (hit && tx == rx && ty == ry && tz == rz) {
+                state.ray.color.x = 1 - state.ray.color.x;
+                state.ray.color.y = 1 - state.ray.color.y;
+                state.ray.color.z = 1 - state.ray.color.z;
+                state.ray.color.w = 1;
+            }
+
+            state.tile.setPixel(state.x, state.y, state.ray.color.x, state.ray.color.y, state.ray.color.z, 1);
+            return true;
+        });
+        task.update(2, 1);
+
+        preview.withImageProtected(image -> PreviewFilter.INSTANCE
+            .processFrame(preview.getPreview(), image, scene.getExposure(), TaskTracker.Task.NONE));
+        task.update(2, 2);
+
         manager.redrawScreen();
     }
 }

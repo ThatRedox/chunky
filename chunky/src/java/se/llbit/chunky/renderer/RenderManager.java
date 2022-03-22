@@ -18,8 +18,7 @@
 package se.llbit.chunky.renderer;
 
 import se.llbit.chunky.renderer.scene.Scene;
-import se.llbit.chunky.renderer.scene.imagebuffer.BitmapImageBuffer;
-import se.llbit.chunky.resources.BitmapImage;
+import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderBuffer;
 import se.llbit.util.Registerable;
 import se.llbit.util.TaskTracker;
 
@@ -91,9 +90,14 @@ public interface RenderManager {
   void removeRenderListener(RenderStatusListener listener);
 
   /**
-   * Run something with the buffered image (unsynchronized).
+   * Set the render preview.
    */
-  void withBufferedImage(Consumer<BitmapImageBuffer> bitmap);
+  void setPreview(RenderPreview<?> preview);
+
+  /**
+   * Get the render preview.
+   */
+  RenderPreview<?> getPreview();
 
   /**
    * Add a listener for the scene status tooltip.
@@ -120,15 +124,11 @@ public interface RenderManager {
   /**
    * Run something with the sample buffer (synchronized).
    */
-  void withSampleBufferProtected(SampleBufferConsumer consumer);
+  void withRenderBufferProtected(Consumer<WriteableRenderBuffer> buffer);
 
   /**
    * Shut down the renderer.
    * This should interrupt all worker threads used by the renderer.
    */
   void shutdown();
-
-  interface SampleBufferConsumer {
-    void accept(double[] samples, int width, int height);
-  }
 }

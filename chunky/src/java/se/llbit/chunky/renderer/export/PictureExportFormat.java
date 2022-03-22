@@ -51,6 +51,6 @@ public interface PictureExportFormat {
    * @param taskTracker Task tracker for progress reporting
    * @throws IOException If exporting the picture fails
    */
-  void write(OutputStream out, Scene scene, TaskTracker taskTracker)
+  void write(OutputStream out, Scene scene, TaskTracker taskTracker) // TODO Accept an image buffer
       throws IOException;
 }

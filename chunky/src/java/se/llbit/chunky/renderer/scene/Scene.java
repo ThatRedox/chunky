@@ -39,7 +39,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -67,12 +66,8 @@ import se.llbit.chunky.renderer.export.PictureExportFormat;
 import se.llbit.chunky.renderer.projection.ProjectionMode;
 import se.llbit.chunky.renderer.postprocessing.PostProcessingFilter;
 import se.llbit.chunky.renderer.postprocessing.PostProcessingFilters;
-import se.llbit.chunky.renderer.postprocessing.PreviewFilter;
 import se.llbit.chunky.renderer.renderdump.RenderDump;
-import se.llbit.chunky.renderer.scene.imagebuffer.BitmapImageBuffer;
-import se.llbit.chunky.renderer.scene.imagebuffer.ImageBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.*;
-import se.llbit.chunky.resources.BitmapImage;
 import se.llbit.chunky.resources.OctreeFileFormat;
 import se.llbit.chunky.world.biome.ArrayBiomePalette;
 import se.llbit.chunky.world.biome.Biome;
@@ -332,10 +327,6 @@ public class Scene implements JsonSerializable, Refreshable {
   private WorldTexture foliageTexture = new WorldTexture();
   private WorldTexture waterTexture = new WorldTexture();
 
-  /** This is the 8-bit channel frame buffer. */
-  private BitmapImageBuffer frontBuffer;
-  private BitmapImageBuffer backBuffer;
-
   /**
    * HDR sample buffer for the render output.
    *
@@ -432,8 +423,6 @@ public class Scene implements JsonSerializable, Refreshable {
    * scene and after scene canvas size changes.
    */
   public synchronized void initBuffers() {
-    frontBuffer = new BitmapImageBuffer(width, height, true);
-    backBuffer = new BitmapImageBuffer(width, height, true);
     alphaChannel = new byte[width * height];
     samples = new DoubleArrayRenderBuffer(width, height);
   }
@@ -525,8 +514,6 @@ public class Scene implements JsonSerializable, Refreshable {
     if (samples != other.samples) {
       width = other.width;
       height = other.height;
-      backBuffer = other.backBuffer;
-      frontBuffer = other.frontBuffer;
       alphaChannel = other.alphaChannel;
       samples = other.samples;
     }
@@ -2021,9 +2008,6 @@ public class Scene implements JsonSerializable, Refreshable {
     if (getOutputMode().isTransparencySupported()) {
       computeAlpha(taskTracker);
     }
-    if (!finalized) {
-      postProcessFrame(taskTracker);
-    }
     writeImage(targetFile, getOutputMode(), taskTracker);
   }
 
@@ -2041,9 +2025,6 @@ public class Scene implements JsonSerializable, Refreshable {
     if (mode.isTransparencySupported()) {
       computeAlpha(taskTracker);
     }
-    if (!finalized) {
-      postProcessFrame(taskTracker);
-    }
     writeImage(targetFile, mode, taskTracker);
   }
 
@@ -2054,9 +2035,6 @@ public class Scene implements JsonSerializable, Refreshable {
       throws IOException {
     if (mode.isTransparencySupported()) {
       computeAlpha(taskTracker);
-    }
-    if (!finalized) {
-      postProcessFrame(taskTracker);
     }
     mode.write(out, this, taskTracker);
   }
@@ -2091,28 +2069,6 @@ public class Scene implements JsonSerializable, Refreshable {
           Log.error("Failed to compute alpha channel", e);
         }
       }
-    }
-  }
-
-  /**
-   * Post-process all pixels in the current frame.
-   *
-   * <p>This is normally done by the render workers during rendering,
-   * but in some cases an separate post processing pass is needed.
-   */
-  public void postProcessFrame(TaskTracker.Task task) {
-    PostProcessingFilter filter = postProcessingFilter;
-    if(mode == RenderMode.PREVIEW) {
-      filter = PreviewFilter.INSTANCE;
-    }
-    RenderPreview preview = getRenderBuffer().getPreview();
-    filter.processFrame(preview, backBuffer, exposure, task);
-    finalized = true;
-  }
-
-  public void postProcessFrame(TaskTracker taskTracker) {
-    try (TaskTracker.Task task = taskTracker.task("Finalizing frame")) {
-      postProcessFrame(task);
     }
   }
 
@@ -2282,7 +2238,7 @@ public class Scene implements JsonSerializable, Refreshable {
       Log.warn("Failed to load the render dump", e);
       return false;
     }
-    postProcessFrame(taskTracker);
+//    getRenderBuffer().getPreview().reload();
 
     Log.info("Render dump loaded: " + fileName);
     return true;
@@ -2376,25 +2332,6 @@ public class Scene implements JsonSerializable, Refreshable {
   }
 
   /**
-   * Prepare the front buffer for rendering by flipping the back and front buffer.
-   */
-  public synchronized void swapBuffers() {
-    finalized = false;
-    BitmapImageBuffer tmp = frontBuffer;
-    frontBuffer = backBuffer;
-    backBuffer = tmp;
-  }
-
-  /**
-   * Call the consumer with the current front frame buffer.
-   */
-  public synchronized void withBufferedImage(Consumer<BitmapImageBuffer> consumer) {
-    if (frontBuffer != null) {
-      consumer.accept(frontBuffer);
-    }
-  }
-
-  /**
    * Get direct access to the sample buffer.
    *
    * @return The sample buffer for this scene
@@ -2414,22 +2351,6 @@ public class Scene implements JsonSerializable, Refreshable {
    */
   public WriteableRenderBuffer getRenderBuffer() {
     return samples;
-  }
-
-  /**
-   * Get the back buffer of the current frame (in ARGB format).
-   * @return Back buffer
-   */
-  @Deprecated
-  public BitmapImage getBackBuffer() {
-    return backBuffer.getBitmap();
-  }
-
-  /**
-   * Get the back buffer of the current frame.
-   */
-  public BitmapImageBuffer getBackImageBuffer() {
-    return backBuffer;
   }
 
   /**
@@ -2508,7 +2429,6 @@ public class Scene implements JsonSerializable, Refreshable {
     Log.info("Merging render dump: " + dumpFile);
     try(FileInputStream inputStream = new FileInputStream(dumpFile)) {
       RenderDump.merge(inputStream, this, taskTracker);
-      postProcessFrame(taskTracker);
       Log.info("Render dump merged: " + dumpFile);
     } catch (IOException e) {
       Log.warn("Failed to merge the render dump", e);

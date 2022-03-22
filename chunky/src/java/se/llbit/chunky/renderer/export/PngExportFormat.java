@@ -5,7 +5,6 @@ import java.io.OutputStream;
 import se.llbit.chunky.renderer.projection.ProjectionMode;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.renderer.scene.imagebuffer.BitmapImageBuffer;
-import se.llbit.chunky.resources.BitmapImage;
 import se.llbit.imageformats.png.ITXT;
 import se.llbit.imageformats.png.PngFileWriter;
 import se.llbit.util.TaskTracker;
@@ -41,10 +40,10 @@ public class PngExportFormat implements PictureExportFormat {
     try (TaskTracker.Task task = taskTracker.task("Writing PNG");
         PngFileWriter writer = new PngFileWriter(out)) {
       if (scene.transparentSky()) {
-        writer.write(imageBuffer.getBitmap().data, scene.getAlphaChannel(), scene.canvasWidth(),
+        writer.write(imageBuffer.getImage().data, scene.getAlphaChannel(), scene.canvasWidth(),
             scene.canvasHeight(), task);
       } else {
-        writer.write(imageBuffer.getBitmap().data, scene.canvasWidth(), scene.canvasHeight(), task);
+        writer.write(imageBuffer.getImage().data, scene.canvasWidth(), scene.canvasHeight(), task);
       }
       if (scene.camera().getProjectionMode() == ProjectionMode.PANORAMIC
           && scene.camera().getFov() >= 179

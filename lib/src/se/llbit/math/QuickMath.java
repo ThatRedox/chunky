@@ -109,9 +109,15 @@ public class QuickMath {
    * Gives value clamped to {@code [min, max]}.
    */
   public static double clamp(double value, double min, double max) {
-    return value < min ? min : value > max ? max : value;
+    return Math.max(min, Math.min(value, max));
   }
 
+  /**
+   * Gives value clamped to {@code [min, max]}.
+   */
+  public static int clamp(int value, int min, int max) {
+    return Math.max(min, Math.min(value, max));
+  }
   /**
    * Maximum of a and b.
    * <p>NB: not NaN-correct. Do not use if either a or b can be NaN.

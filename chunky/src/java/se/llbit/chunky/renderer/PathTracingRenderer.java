@@ -51,10 +51,12 @@ public class PathTracingRenderer extends TileBasedRenderer {
   }
 
   @Override
-  public void doRender(DefaultRenderManager manager) throws InterruptedException {
+  public void render(DefaultRenderManager manager) throws InterruptedException {
     Scene scene = manager.bufferedScene;
     int width = scene.width;
     int height = scene.height;
+
+    initTiles(scene.getRenderBuffer(), manager.context.tileWidth());
 
     int sppPerPass = manager.context.sppPerPass();
     Camera cam = scene.camera();
@@ -62,7 +64,7 @@ public class PathTracingRenderer extends TileBasedRenderer {
     double invHeight = 1.0 / height;
 
     do {
-      long samples = renderTiles(manager, state -> {
+      long samples = renderTiles(manager, scene.getRenderBuffer(), state -> {
         double sr = 0;
         double sg = 0;
         double sb = 0;

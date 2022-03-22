@@ -18,14 +18,12 @@
 package se.llbit.chunky.renderer;
 
 import se.llbit.chunky.PersistentSettings;
+import se.llbit.chunky.main.Chunky;
 import se.llbit.chunky.plugin.PluginApi;
-import se.llbit.chunky.renderer.postprocessing.PostProcessingFilter;
-import se.llbit.chunky.renderer.postprocessing.PreviewFilter;
 import se.llbit.chunky.renderer.scene.PathTracer;
 import se.llbit.chunky.renderer.scene.PreviewRayTracer;
 import se.llbit.chunky.renderer.scene.Scene;
-import se.llbit.chunky.renderer.scene.imagebuffer.BitmapImageBuffer;
-import se.llbit.chunky.resources.BitmapImage;
+import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderBuffer;
 import se.llbit.log.Log;
 import se.llbit.util.TaskTracker;
 
@@ -84,6 +82,8 @@ public class DefaultRenderManager extends Thread implements RenderManager {
    */
   protected String renderer = ChunkyPathTracerID;
   protected String previewRenderer = ChunkyPreviewID;
+
+  protected RenderPreview<?> preview = null;
 
   /**
    * This is a buffered scene which render workers should use while rendering.
@@ -261,15 +261,17 @@ public class DefaultRenderManager extends Thread implements RenderManager {
 
             if (reason == ResetReason.SCENE_LOADED) {
               // Make sure frame is finalized
-              bufferedScene.postProcessFrame(renderTask);
+              if (preview != null) {
+                preview.register(bufferedScene.getRenderBuffer());
+                preview.withImageProtected(image ->
+                    bufferedScene.getPostProcessingFilter().processFrame(preview.getPreview(), image,
+                        bufferedScene.getExposure(), TaskTracker.Task.NONE));
+              }
 
               // Reset the task
               if (mode == RenderMode.PAUSED) {
                 updateRenderProgress();
               }
-
-              // Swap buffers so the render canvas will see the current frame.
-              bufferedScene.swapBuffers();
 
               // Notify the scene listeners.
               sendSceneStatus(bufferedScene.sceneStatus());
@@ -281,6 +283,9 @@ public class DefaultRenderManager extends Thread implements RenderManager {
         // Select the renderer from the scene
         setRenderer(bufferedScene.getRenderer());
         setPreviewRenderer(bufferedScene.getPreviewRenderer());
+
+        // Ensure preview is registered
+        if (preview != null) preview.register(bufferedScene.getRenderBuffer());
 
         // Notify renderers
         resetCount += 1;
@@ -327,7 +332,6 @@ public class DefaultRenderManager extends Thread implements RenderManager {
    */
   @PluginApi
   public void redrawScreen() {
-    bufferedScene.swapBuffers();
     canvas.repaint();
   }
 
@@ -411,10 +415,14 @@ public class DefaultRenderManager extends Thread implements RenderManager {
    */
   protected void finalizeFrame(boolean force) {
     if (force || snapshotControl.saveSnapshot(bufferedScene, bufferedScene.spp)) {
-      PostProcessingFilter filter = bufferedScene.getPostProcessingFilter();
-      if (mode == RenderMode.PREVIEW) filter = PreviewFilter.INSTANCE;
-      filter.processFrame(bufferedScene.getRenderBuffer(), bufferedScene.getBackImageBuffer(), bufferedScene.getExposure(), TaskTracker.Task.NONE);
-      redrawScreen();
+      Chunky.getCommonThreads().submit(() -> {
+        if (preview != null) {
+          preview.withImageProtected(image -> bufferedScene.getPostProcessingFilter().processFrame(
+              preview.getPreview(), image, bufferedScene.getExposure(), TaskTracker.Task.NONE
+          ));
+        }
+        redrawScreen();
+      });
     }
   }
 
@@ -446,6 +454,16 @@ public class DefaultRenderManager extends Thread implements RenderManager {
   }
 
   @Override
+  public void setPreview(RenderPreview<?> preview) {
+    this.preview = preview;
+  }
+
+  @Override
+  public RenderPreview<?> getPreview() {
+    return preview;
+  }
+
+  @Override
   public void setSceneProvider(SceneProvider sceneProvider) {
     this.sceneProvider = sceneProvider;
   }
@@ -453,14 +471,6 @@ public class DefaultRenderManager extends Thread implements RenderManager {
   @Override
   public void setCanvas(Repaintable canvas) {
     this.canvas = canvas;
-  }
-
-  /**
-   * Call the consumer with the current front frame buffer.
-   */
-  @Override
-  public void withBufferedImage(Consumer<BitmapImageBuffer> consumer) {
-    bufferedScene.withBufferedImage(consumer);
   }
 
   @Override
@@ -523,9 +533,9 @@ public class DefaultRenderManager extends Thread implements RenderManager {
   }
 
   @Override
-  public void withSampleBufferProtected(SampleBufferConsumer consumer) {
+  public void withRenderBufferProtected(Consumer<WriteableRenderBuffer> consumer) {
     synchronized (bufferedScene) {
-      consumer.accept(bufferedScene.getSampleBuffer(), bufferedScene.width, bufferedScene.height);
+      consumer.accept(bufferedScene.getRenderBuffer());
     }
   }
 

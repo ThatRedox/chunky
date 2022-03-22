@@ -3,16 +3,21 @@ package se.llbit.chunky.renderer.scene.renderbuffer;
 import se.llbit.math.Vector3;
 
 import java.util.Arrays;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 public class DoubleArrayRenderBuffer implements WriteableRenderBuffer {
-    private final WriteableRenderPreview preview;
     private final double[] samples;
     private final int[] spp;
 
     private final int width;
     private final int height;
+
+    private final CopyOnWriteArraySet<RawPixelConsumer> pixelCallbacks = new CopyOnWriteArraySet<>();
+    private final CopyOnWriteArraySet<Consumer<RenderTile>> tileCallbacks = new CopyOnWriteArraySet<>();
 
     public class Tile implements WriteableRenderTile {
         private final int offsetX;
@@ -68,7 +73,9 @@ public class DoubleArrayRenderBuffer implements WriteableRenderBuffer {
             samples[i*3 + 2] = b;
             spp[i] = baseSpp + s;
 
-            preview.setBackColor(x, y, r, g, b);
+            for (RawPixelConsumer consumer : pixelCallbacks) {
+                consumer.accept(x, y, r, g, b, s);
+            }
         }
 
         @Override
@@ -81,12 +88,16 @@ public class DoubleArrayRenderBuffer implements WriteableRenderBuffer {
             samples[i*3 + 2] = b;
             spp[i] = s;
 
-            preview.setBackColor(x, y, r, g, b);
+            for (RawPixelConsumer consumer : pixelCallbacks) {
+                consumer.accept(x, y, r, g, b, s);
+            }
         }
 
         @Override
-        public void commit() {
-            // Nothing needs to be done here
+        public void close() {
+            for (Consumer<RenderTile> callback : tileCallbacks) {
+                callback.accept(this);
+            }
         }
 
         @Override
@@ -127,7 +138,6 @@ public class DoubleArrayRenderBuffer implements WriteableRenderBuffer {
         this.height = height;
         this.samples = new double[bufferLength];
         this.spp = new int[bufferLength];
-        this.preview = new WriteableRenderPreview(this);
     }
 
     @Override
@@ -155,18 +165,18 @@ public class DoubleArrayRenderBuffer implements WriteableRenderBuffer {
     }
 
     @Override
-    public void reset() {
-        Arrays.fill(spp, 0);
-        preview.reset();
+    public Set<RawPixelConsumer> getPixelCallbacks() {
+        return pixelCallbacks;
     }
 
-    /**
-     * Get the render preview. Calling this will update the render preview to the most recent values.
-     */
     @Override
-    public RenderPreview getPreview() {
-        preview.commitBackColor();
-        return preview;
+    public Set<Consumer<RenderTile>> getTileCallbacks() {
+        return tileCallbacks;
+    }
+
+    @Override
+    public void reset() {
+        Arrays.fill(spp, 0);
     }
 
     @Override

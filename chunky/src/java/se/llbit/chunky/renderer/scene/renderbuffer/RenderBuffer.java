@@ -2,6 +2,7 @@ package se.llbit.chunky.renderer.scene.renderbuffer;
 
 import se.llbit.util.Registerable;
 
+import java.util.Set;
 import java.util.concurrent.Future;
 
 public interface RenderBuffer extends Registerable {
@@ -34,9 +35,4 @@ public interface RenderBuffer extends Registerable {
      * Get the height of this buffer.
      */
     int getHeight();
-
-    /**
-     * Get the render preview.
-     */
-    RenderPreview getPreview();
 }

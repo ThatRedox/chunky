@@ -1,6 +1,8 @@
 package se.llbit.chunky.renderer.scene.imagebuffer;
 
-import se.llbit.chunky.resources.BitmapImage;
+import javafx.scene.image.PixelReader;
+import javafx.scene.image.PixelWriter;
+import javafx.scene.image.WritableImage;
 import se.llbit.math.ColorUtil;
 import se.llbit.math.Vector3;
 import se.llbit.util.annotation.Nullable;
@@ -9,15 +11,20 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 /**
- * Image buffer backed by a BitmapImage.
+ * Image buffer backed by a JavaFX WriteableImage.
  */
-public class BitmapImageBuffer implements ImageBuffer {
-    protected final BitmapImage image;
+public class FxWriteableImageBuffer implements ImageBuffer {
+    protected final WritableImage image;
+    protected final PixelWriter writer;
+    protected final PixelReader reader;
     protected final boolean alpha;
 
-    public BitmapImageBuffer(int width, int height, boolean alpha) {
-        this.image = new BitmapImage(width, height);
+    public FxWriteableImageBuffer(int width, int height, boolean alpha) {
+        this.image = new WritableImage(width, height);
         this.alpha = alpha;
+
+        this.writer = image.getPixelWriter();
+        this.reader = image.getPixelReader();
     }
 
     @Override
@@ -37,19 +44,19 @@ public class BitmapImageBuffer implements ImageBuffer {
 
     @Override
     public int getWidth() {
-        return image.width;
+        return (int) image.getWidth();
     }
 
     @Override
     public int getHeight() {
-        return image.height;
+        return (int) image.getHeight();
     }
 
     /**
-     * Get the backing BitmapImage.
+     * Get the backing JavaFX writeable image.
      */
-    public BitmapImage getImage() {
-        return image;
+    public WritableImage getImage() {
+        return this.image;
     }
 
     public class Tile implements ReadWriteImageTile {
@@ -77,12 +84,12 @@ public class BitmapImageBuffer implements ImageBuffer {
 
         @Override
         public int getBufferWidth() {
-            return image.width;
+            return FxWriteableImageBuffer.this.getWidth();
         }
 
         @Override
         public int getBufferHeight() {
-            return image.height;
+            return FxWriteableImageBuffer.this.getHeight();
         }
 
         @Override
@@ -98,7 +105,7 @@ public class BitmapImageBuffer implements ImageBuffer {
         @Override
         public double getColor(int x, int y, @Nullable Vector3 color) {
             assert boundsCheck(x, y);
-            int argb = image.getPixel(x, y);
+            int argb = reader.getArgb(x, y);
 
             if (color != null) {
                 color.x = (0xFF & (argb >> 16)) / 255.f;
@@ -116,9 +123,9 @@ public class BitmapImageBuffer implements ImageBuffer {
         public void setColor(int x, int y, double r, double g, double b, double a) {
             assert boundsCheck(x, y);
             if (alpha) {
-                image.setPixel(x, y, ColorUtil.getArgbClamped(r, g, b, a));
+                writer.setArgb(x, y, ColorUtil.getArgbClamped(r, g, b, a));
             } else {
-                image.setPixel(x, y, ColorUtil.getArgbClamped(r, g, b, 1.0));
+                writer.setArgb(x, y, ColorUtil.getArgbClamped(r, g, b, 1.0));
             }
         }
 

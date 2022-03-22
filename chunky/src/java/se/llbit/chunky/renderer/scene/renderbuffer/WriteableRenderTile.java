@@ -2,7 +2,7 @@ package se.llbit.chunky.renderer.scene.renderbuffer;
 
 import se.llbit.math.Vector3;
 
-public interface WriteableRenderTile extends RenderTile {
+public interface WriteableRenderTile extends RenderTile, AutoCloseable {
     /**
      * Merge samples into a pixel.
      * @param x Buffer x
@@ -39,5 +39,6 @@ public interface WriteableRenderTile extends RenderTile {
     /**
      * Commit the changes made to this tile.
      */
-    void commit();
+    @Override
+    void close();
 }

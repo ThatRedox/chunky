@@ -85,7 +85,6 @@ public class PostprocessingTab extends ScrollPane implements RenderControlsTab, 
     postprocessingFilter.getSelectionModel().selectedItemProperty().addListener(
         (observable, oldValue, newValue) -> {
           scene.setPostprocess(newValue);
-          scene.postProcessFrame(new TaskTracker(ProgressListener.NONE));
           controller.getCanvas().forceRepaint();
         });
     postprocessingFilter.setConverter(new StringConverter<PostProcessingFilter>() {
@@ -105,7 +104,6 @@ public class PostprocessingTab extends ScrollPane implements RenderControlsTab, 
     exposure.clampMin();
     exposure.onValueChange(value -> {
       scene.setExposure(value);
-      scene.postProcessFrame(new TaskTracker(ProgressListener.NONE));
       controller.getCanvas().forceRepaint();
     });
   }

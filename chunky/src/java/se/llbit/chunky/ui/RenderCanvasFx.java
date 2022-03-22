@@ -34,7 +34,6 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.PixelFormat;
-import javafx.scene.image.WritableImage;
 import javafx.scene.image.WritablePixelFormat;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -51,8 +50,7 @@ import se.llbit.chunky.renderer.*;
 import se.llbit.chunky.renderer.RenderManager;
 import se.llbit.chunky.renderer.scene.Camera;
 import se.llbit.chunky.renderer.scene.Scene;
-import se.llbit.chunky.renderer.scene.imagebuffer.BitmapImageBuffer;
-import se.llbit.chunky.resources.BitmapImage;
+import se.llbit.chunky.renderer.scene.imagebuffer.FxWriteableImageBuffer;
 import se.llbit.math.Vector2;
 
 import java.nio.IntBuffer;
@@ -66,8 +64,7 @@ public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStat
       PixelFormat.getIntArgbInstance();
 
   private final Scene renderScene;
-
-  private WritableImage image;
+  private final RenderPreview<FxWriteableImageBuffer> preview;
 
   private final AtomicBoolean painting = new AtomicBoolean(false);
   private final Canvas canvas;
@@ -89,16 +86,16 @@ public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStat
     this.renderManager = renderManager;
     renderManager.addSceneStatusListener(this);
 
+    preview = new RenderPreview<>(FxWriteableImageBuffer::new);
+    renderManager.setPreview(preview);
+
     tooltip.setAutoHide(true);
     tooltip.setConsumeAutoHidingEvents(false);
     tooltip.setAnchorLocation(PopupWindow.AnchorLocation.WINDOW_BOTTOM_LEFT);
 
     canvas = new Canvas();
-    synchronized (scene) {
-      canvas.setWidth(scene.width);
-      canvas.setHeight(scene.height);
-      image = new WritableImage(scene.width, scene.height);
-    }
+    this.widthProperty().addListener(observable -> setWidthHeight());
+    this.heightProperty().addListener(observable -> setWidthHeight());
 
     canvasPane = new StackPane(canvas);
     setContent(canvasPane);
@@ -317,6 +314,14 @@ public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStat
     });
   }
 
+  private void setWidthHeight() {
+    int width = (int) this.getWidth();
+    int height = (int) this.getHeight();
+    this.preview.setMaxResolution(width, height);
+    this.canvas.setWidth(width);
+    this.canvas.setHeight(height);
+  }
+
   private void updateCanvasPane() {
     Bounds bounds = getViewportBounds();
     canvasPane.setMinWidth(Math.max(canvas.getWidth() * canvas.getScaleX(), bounds.getWidth()));
@@ -388,17 +393,12 @@ public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStat
 
   public void forceRepaint() {
     painting.set(true);
-    renderManager.withBufferedImage(img -> {
-      BitmapImage bitmap = img.getBitmap();
-      if (bitmap.width == (int) image.getWidth()
-          && bitmap.height == (int) image.getHeight()) {
-        image.getPixelWriter().setPixels(0, 0, bitmap.width, bitmap.height, PIXEL_FORMAT,
-            bitmap.data, 0, bitmap.width);
-      }
-    });
+    assert renderManager.getPreview() == this.preview;
     Platform.runLater(() -> {
       GraphicsContext gc = canvas.getGraphicsContext2D();
-      gc.drawImage(image, 0, 0);
+      preview.withImageProtected(image -> {
+        gc.drawImage(image.getImage(), 0, 0);
+      });
       painting.set(false);
     });
   }
@@ -426,9 +426,6 @@ public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStat
   public void setCanvasSize(int width, int height) {
     canvas.setWidth(width);
     canvas.setHeight(height);
-    if (image == null || width != image.getWidth() || height != image.getHeight()) {
-      image = new WritableImage(width, height);
-    }
 
     if (fitToScreen) {
       updateCanvasFit();
