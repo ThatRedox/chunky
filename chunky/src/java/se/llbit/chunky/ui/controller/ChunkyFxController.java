@@ -345,10 +345,7 @@ public class ChunkyFxController
     asyncSceneManager.setOnSceneLoaded(() -> {
       CountDownLatch guiUpdateLatch = new CountDownLatch(1);
       Platform.runLater(() -> {
-        synchronized (scene) {
-          sceneNameField.setText(scene.name());
-          canvas.setCanvasSize(scene.width, scene.height);
-        }
+        sceneNameField.setText(scene.name());
         updateTitle();
         refreshSettings();
         guiUpdateLatch.countDown();

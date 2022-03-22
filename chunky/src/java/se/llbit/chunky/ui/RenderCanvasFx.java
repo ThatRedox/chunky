@@ -33,8 +33,6 @@ import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.Tooltip;
-import javafx.scene.image.PixelFormat;
-import javafx.scene.image.WritablePixelFormat;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Background;
@@ -53,15 +51,12 @@ import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.renderer.scene.imagebuffer.FxWriteableImageBuffer;
 import se.llbit.math.Vector2;
 
-import java.nio.IntBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Shows the current render preview.
  */
 public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStatusListener {
-  private static final WritablePixelFormat<IntBuffer> PIXEL_FORMAT =
-      PixelFormat.getIntArgbInstance();
 
   private final Scene renderScene;
   private final RenderPreview<FxWriteableImageBuffer> preview;
@@ -74,10 +69,8 @@ public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStat
   private final RenderManager renderManager;
   private int lastX;
   private int lastY;
-  private Vector2 target = new Vector2(0, 0);
-  private Tooltip tooltip = new Tooltip();
-
-  private boolean fitToScreen = PersistentSettings.getCanvasFitToScreen();
+  private final Vector2 target = new Vector2(0, 0);
+  private final Tooltip tooltip = new Tooltip();
 
   private RenderStatusListener renderListener;
 
@@ -184,32 +177,12 @@ public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStat
     for (int percent : new int[] { 25, 50, 75, 100, 150, 200, 300, 400 }) {
       RadioMenuItem item = new RadioMenuItem(String.format("%d%%", percent));
       item.setToggleGroup(scaleGroup);
-      item.setSelected(PersistentSettings.getCanvasScale() == percent && !fitToScreen);
+      item.setSelected(PersistentSettings.getCanvasScale() == percent);
       item.setOnAction(e -> {
         updateCanvasScale(percent / 100.0);
         PersistentSettings.setCanvasScale(percent);
-        if (fitToScreen) {
-          fitToScreen = false;
-          PersistentSettings.setCanvasFitToScreen(false);
-        }
       });
       canvasScale.getItems().add(item);
-    }
-
-    RadioMenuItem fit = new RadioMenuItem("Fit to Screen");
-    fit.setSelected(fitToScreen);
-    fit.setToggleGroup(scaleGroup);
-    fit.setOnAction(e -> {
-      fitToScreen = true;
-      PersistentSettings.setCanvasFitToScreen(true);
-      updateCanvasFit();
-    });
-    canvasScale.getItems().add(fit);
-
-    if (fitToScreen) {
-      updateCanvasFit();
-    } else {
-      updateCanvasScale(PersistentSettings.getCanvasScale() / 100.0);
     }
 
     contextMenu.getItems().addAll(setTarget, showGuides, canvasScale);
@@ -253,10 +226,6 @@ public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStat
       }
     });
     canvasPane.setOnMouseClicked(event -> canvasPane.requestFocus());
-
-    canvasPane.setOnMouseEntered(e -> {
-      updateCanvasFit();
-    });
 
     canvasPane.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
       if (!isVisible()) {
@@ -315,8 +284,8 @@ public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStat
   }
 
   private void setWidthHeight() {
-    int width = (int) this.getWidth();
-    int height = (int) this.getHeight();
+    int width = (int) (this.getWidth() * 0.95);
+    int height = (int) (this.getHeight() * 0.95);
     this.preview.setMaxResolution(width, height);
     this.canvas.setWidth(width);
     this.canvas.setHeight(height);
@@ -341,51 +310,26 @@ public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStat
     // Force layout to occur or else scroll might not work
     layout();
 
-    if (fitToScreen) {
-      setVvalue(0.5);
-      setHvalue(0.5);
-    } else {
-      double scaleX = canvas.getScaleX();
-      double scrollX = getHvalue();
+    double scaleX = canvas.getScaleX();
+    double scrollX = getHvalue();
 
-      if (scrollX > scaleX/2 + 0.5) {
-        setHvalue(scaleX/2 + 0.5);
-      } else if (scrollX < -scaleX/2 + 0.5) {
-        setHvalue(-scaleX/2 + 0.5);
-      }
-
-      double scaleY = canvas.getScaleY();
-      double scrollY = getVvalue();
-
-      if (scrollY > scaleY/2 + 0.5) {
-        setVvalue(scaleY/2 + 0.5);
-      } else if (scrollY < -scaleY/2 + 0.5) {
-        setVvalue(-scaleY/2 + 0.5);
-      }
-    }
-  }
-
-  private void updateCanvasFit() {
-    if (!fitToScreen) {
-      return;
+    if (scrollX > scaleX/2 + 0.5) {
+      setHvalue(scaleX/2 + 0.5);
+    } else if (scrollX < -scaleX/2 + 0.5) {
+      setHvalue(-scaleX/2 + 0.5);
     }
 
-    double width = canvas.getWidth();
-    double height = canvas.getHeight();
-    double fitWidth = this.getWidth();
-    double fitHeight = this.getHeight();
+    double scaleY = canvas.getScaleY();
+    double scrollY = getVvalue();
 
-    double scaleX = fitWidth / width;
-    double scaleY = fitHeight / height;
-
-    double scale = Math.min(scaleX, scaleY);
-    scale = Math.floor(scale * 0.99 * 8) / 8;
-
-    updateCanvasScale(scale);
+    if (scrollY > scaleY/2 + 0.5) {
+      setVvalue(scaleY/2 + 0.5);
+    } else if (scrollY < -scaleY/2 + 0.5) {
+      setVvalue(-scaleY/2 + 0.5);
+    }
   }
 
   @Override public void repaint() {
-    updateCanvasFit();
     if (painting.compareAndSet(false, true)) {
       forceRepaint();
     }
@@ -395,9 +339,23 @@ public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStat
     painting.set(true);
     assert renderManager.getPreview() == this.preview;
     Platform.runLater(() -> {
-      GraphicsContext gc = canvas.getGraphicsContext2D();
       preview.withImageProtected(image -> {
-        gc.drawImage(image.getImage(), 0, 0);
+        double factorX = this.getWidth()/ image.getWidth();
+        double factorY = this.getHeight()/ image.getHeight();
+        double factor = Math.min(factorX, factorY) * 0.975;
+        factor = Math.floor(factor * 8.0) / 8.0;  // Round scale factor to remove interpolation artifacts.
+
+        double width = image.getWidth() * factor;
+        if (width != canvas.getWidth()) {
+          canvas.setWidth(width);
+        }
+        double height = image.getHeight() * factor;
+        if (height != canvas.getHeight()) {
+          canvas.setHeight(height);
+        }
+
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.drawImage(image.getImage(), 0, 0, width, height);
       });
       painting.set(false);
     });
@@ -418,19 +376,5 @@ public class RenderCanvasFx extends ScrollPane implements Repaintable, SceneStat
       noChunksLabel.setPadding(new Insets(20));
       noChunksLabel.setVisible(!renderScene.haveLoadedChunks());
     });
-  }
-
-  /**
-   * Should only be called on the JavaFX application thread.
-   */
-  public void setCanvasSize(int width, int height) {
-    canvas.setWidth(width);
-    canvas.setHeight(height);
-
-    if (fitToScreen) {
-      updateCanvasFit();
-    } else {
-      updateCanvasScale(canvas.getScaleX());
-    }
   }
 }

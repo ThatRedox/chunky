@@ -369,7 +369,6 @@ public class GeneralTab extends ScrollPane implements RenderControlsTab, Initial
   }
 
   private void updateCanvasSize(int width, int height) {
-    renderControls.getCanvas().setCanvasSize(width, height);
     scene.setCanvasSize(width, height);
   }
 
