@@ -330,7 +330,7 @@ public class GeneralTab extends ScrollPane implements RenderControlsTab, Initial
     setDefaultYMax.setOnAction(e -> PersistentSettings.setYClipMax(yMax.get()));
 
     canvasSizeLabel.setGraphic(new ImageView(Icon.scale.fxImage()));
-    canvasSizeInput.getSize().addListener(this::updateCanvasSize);
+    canvasSizeInput.getSize().addListener((width, height) -> scene.setCanvasSize(width, height));
 
     SVGPath swapAxesIcon = new SVGPath();
     swapAxesIcon.setContent(Icons.PORTRAIT_TO_LANDSCAPE);
@@ -367,10 +367,6 @@ public class GeneralTab extends ScrollPane implements RenderControlsTab, Initial
     makeDefaultSize.setTooltip(new Tooltip("Make the current canvas size the default."));
     makeDefaultSize.setOnAction(e -> PersistentSettings
       .set3DCanvasSize(scene.canvasWidth(), scene.canvasHeight()));
-  }
-
-  private void updateCanvasSize(int width, int height) {
-    scene.setCanvasSize(width, height);
   }
 
   @Override public void setController(RenderControlsFxController controls) {
