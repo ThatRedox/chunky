@@ -120,7 +120,7 @@ public class Sun implements JsonSerializable {
 
   private double intensity = DEFAULT_INTENSITY;
 
-  private double luminosity = 100;
+  private double luminosity = 325;
   private double luminosityPdf = 1.0 / luminosity;
 
   private double azimuth = Math.PI / 2.5;
