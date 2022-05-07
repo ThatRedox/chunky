@@ -263,6 +263,7 @@ public class DefaultRenderManager extends Thread implements RenderManager {
               // Make sure frame is finalized
               if (preview != null) {
                 preview.register(bufferedScene.getRenderBuffer());
+                preview.build();
                 preview.withImageProtected(image ->
                     bufferedScene.getPostProcessingFilter().processFrame(preview.getPreview(), image,
                         bufferedScene.getExposure(), TaskTracker.Task.NONE));

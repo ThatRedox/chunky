@@ -5,6 +5,7 @@ import se.llbit.chunky.renderer.scene.renderbuffer.RenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.RenderTile;
 import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderBuffer;
 import se.llbit.chunky.renderer.scene.renderbuffer.WriteableRenderTile;
+import se.llbit.chunky.renderer.scene.renderbuffer.iteration.RenderBufferIterable;
 import se.llbit.math.QuickMath;
 import se.llbit.math.Vector3;
 import se.llbit.util.annotation.Nullable;
@@ -21,7 +22,7 @@ import java.util.function.Consumer;
  * @param <T> backing ImageBuffer type
  */
 public class RenderPreview<T extends ImageBuffer> {
-    protected RenderBuffer buffer = null;
+    protected WriteableRenderBuffer buffer = null;
     protected int maxWidth = 128;
     protected int maxHeight = 128;
 
@@ -47,6 +48,13 @@ public class RenderPreview<T extends ImageBuffer> {
         buffer.getTileCallbacks().add(tileConsumerInstance);
         this.buffer = buffer;
         setResolution();
+    }
+
+    /**
+     * Build this preview with the stored render buffer.
+     */
+    public void build() {
+        RenderBufferIterable.write(this.buffer).stream().forEach(WriteableRenderTile::close);
     }
 
     /**
