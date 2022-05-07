@@ -166,12 +166,11 @@ public class DefaultRenderManager extends Thread implements RenderManager {
     @Override public String getId() { return "Empty"; }
     @Override public String getName() { return "Empty"; }
     @Override public String getDescription() { return "Empty Renderer"; }
-    @Override public void setPostRender(BooleanSupplier callback) {}
-    @Override public void render(DefaultRenderManager manager) {}
+    @Override public void render(DefaultRenderManager manager, RenderStatusCallback statusCallback) { }
   };
 
-  protected final BooleanSupplier previewCallback;
-  protected final BooleanSupplier renderCallback;
+  protected final RenderStatusCallback previewCallback;
+  protected final RenderStatusCallback renderCallback;
 
   /**
    * @param headless {@code true} if rendering threads should be shut
@@ -190,7 +189,7 @@ public class DefaultRenderManager extends Thread implements RenderManager {
 
     // Initialize callbacks here since java will complain `bufferedScene` is not initialized yet.
     // (nothing important in the rest of the constructor)
-    this.previewCallback = () -> {
+    this.previewCallback = (complete, total) -> {
       sendSceneStatus(bufferedScene.sceneStatus());
 
       renderStatusListeners.forEach(listener -> {
@@ -206,7 +205,7 @@ public class DefaultRenderManager extends Thread implements RenderManager {
       return !finalizeAllFrames || sceneProvider.pollSceneStateChange();
     };
 
-    this.renderCallback = () -> {
+    this.renderCallback = (complete, total) -> {
       long elapsedTime = System.currentTimeMillis() - frameStart;
 
       sceneProvider.withSceneProtected(scene -> {
@@ -221,11 +220,12 @@ public class DefaultRenderManager extends Thread implements RenderManager {
 
         this.finalizeFrame(getRenderer().autoPostProcess() && finalizeAllFrames);
 
-        frameCompletionListener.accept(bufferedScene, bufferedScene.spp);
-        updateRenderProgress();
+        int spp = (int) ((complete * bufferedScene.getTargetSpp()) / total);
+        frameCompletionListener.accept(bufferedScene, spp);
+        updateRenderProgress(spp, complete, total);
 
-        if (bufferedScene.spp > bufferedScene.getTargetSpp()) {
-          renderCompletionListener.accept(bufferedScene.renderTime, samplesPerSecond());
+        if (complete >= total) {
+          renderCompletionListener.accept(bufferedScene.renderTime, samplesPerSecond(spp));
           return true;
         }
       }
@@ -270,7 +270,7 @@ public class DefaultRenderManager extends Thread implements RenderManager {
 
               // Reset the task
               if (mode == RenderMode.PAUSED) {
-                updateRenderProgress();
+                updateRenderProgress(0, 0, 1);
               }
 
               // Notify the scene listeners.
@@ -301,21 +301,11 @@ public class DefaultRenderManager extends Thread implements RenderManager {
           if (finalizeAllFrames) {
             // Preview with no CPU limit
             pool.setCpuLoad(100);
-            render.setPostRender(previewCallback);
-            render.render(this);
+            render.render(this, previewCallback);
             pool.setCpuLoad(cpuLoad);
           }
         } else {
-          // Bail early if render is already done
-          if (bufferedScene.spp >= bufferedScene.getTargetSpp()) {
-            sceneProvider.withEditSceneProtected(scene -> {
-              scene.pauseRender();
-              updateRenderState(scene);
-            });
-          } else if (mode != RenderMode.PAUSED) {
-            render.setPostRender(renderCallback);
-            render.render(this);
-          }
+          render.render(this, renderCallback);
         }
 
         if (headless) break;
@@ -376,36 +366,36 @@ public class DefaultRenderManager extends Thread implements RenderManager {
   /**
    * @return the current rendering speed in samples per second (SPS)
    */
-  private int samplesPerSecond() {
+  private int samplesPerSecond(int spp) {
     int canvasWidth = bufferedScene.canvasWidth();
     int canvasHeight = bufferedScene.canvasHeight();
     long pixelsPerFrame = (long) canvasWidth * canvasHeight;
     double renderTime = bufferedScene.renderTime / 1000.0;
-    return (int) ((bufferedScene.spp * pixelsPerFrame) / renderTime);
+    return (int) ((spp * pixelsPerFrame) / renderTime);
   }
 
-  private void updateRenderProgress() {
+  private void updateRenderProgress(int spp, long complete, long total) {
     double renderTime = bufferedScene.renderTime / 1000.0;
 
     // Notify progress listener.
     int target = bufferedScene.getTargetSpp();
-    long etaSeconds = (long) (((target - bufferedScene.spp) * renderTime) / bufferedScene.spp);
+    long etaSeconds = (long) (((total - complete) * renderTime) / complete);
     if (etaSeconds > 0) {
       int seconds = (int) ((etaSeconds) % 60);
       int minutes = (int) ((etaSeconds / 60) % 60);
       int hours = (int) (etaSeconds / 3600);
       String eta = String.format("%d:%02d:%02d", hours, minutes, seconds);
-      renderTask.update("Rendering", target, bufferedScene.spp, eta);
+      renderTask.update("Rendering", target, spp, eta);
     } else {
-      renderTask.update("Rendering", target, bufferedScene.spp, "");
+      renderTask.update("Rendering", target, spp, "");
     }
 
     synchronized (this) {
       // Update render status display.
       renderStatusListeners.forEach(listener -> {
         listener.setRenderTime(bufferedScene.renderTime);
-        listener.setSamplesPerSecond(samplesPerSecond());
-        listener.setSpp(bufferedScene.spp);
+        listener.setSamplesPerSecond(samplesPerSecond(spp));
+        listener.setSpp(spp);
       });
     }
   }

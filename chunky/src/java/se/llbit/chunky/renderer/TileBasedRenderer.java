@@ -65,11 +65,6 @@ public abstract class TileBasedRenderer implements Renderer {
         }
     }
 
-    @Override
-    public void setPostRender(BooleanSupplier callback) {
-        postRender = callback;
-    }
-
     /**
      * Initiate the tiles. This must be called before attempting to render.
      */

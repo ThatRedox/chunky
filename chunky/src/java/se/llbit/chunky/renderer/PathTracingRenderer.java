@@ -51,10 +51,13 @@ public class PathTracingRenderer extends TileBasedRenderer {
   }
 
   @Override
-  public void render(DefaultRenderManager manager) throws InterruptedException {
+  public void render(DefaultRenderManager manager, RenderStatusCallback callback) throws InterruptedException {
     Scene scene = manager.bufferedScene;
     int width = scene.width;
     int height = scene.height;
+
+    long samples;
+    long totalSamples = (long) width * (long) height * (long) scene.getTargetSpp();
 
     initTiles(scene.getRenderBuffer(), manager.context.tileWidth());
 
@@ -64,7 +67,7 @@ public class PathTracingRenderer extends TileBasedRenderer {
     double invHeight = 1.0 / height;
 
     do {
-      long samples = renderTiles(manager, scene.getRenderBuffer(), state -> {
+      samples = renderTiles(manager, scene.getRenderBuffer(), state -> {
         double sr = 0;
         double sg = 0;
         double sb = 0;
@@ -88,8 +91,6 @@ public class PathTracingRenderer extends TileBasedRenderer {
 
         return state.tile.getColor(state.x, state.y, null) >= scene.getTargetSpp();
       });
-
-      scene.spp = Math.toIntExact(samples / ((long) scene.width * scene.height));
-    } while (!postRender.getAsBoolean() && !isComplete());
+    } while (!callback.update(samples, totalSamples) && !isComplete());
   }
 }

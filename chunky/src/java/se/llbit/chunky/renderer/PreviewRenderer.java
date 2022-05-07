@@ -59,7 +59,7 @@ public class PreviewRenderer extends TileBasedRenderer {
     }
 
     @Override
-    public void render(DefaultRenderManager manager) throws InterruptedException {
+    public void render(DefaultRenderManager manager, RenderStatusCallback callback) throws InterruptedException {
         TaskTracker.Task task = manager.getRenderTask();
         task.update("Preview", 2, 0, "");
 
