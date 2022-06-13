@@ -77,16 +77,32 @@ public class Cache {
     Chunky.getCommonThreads().submit(Cache::checkedFlush);
   }
 
+  /**
+   * Get a cache object from it's key.
+   * @param key   Cache object's key.
+   * @return      Optional containing the CacheObject if it exists.
+   */
   public static Optional<CacheObject> get(String key) {
     return Optional.ofNullable(objects.getOrDefault(key, null));
   }
 
+  /**
+   * Remove a cache object.
+   * @param key   Cache object's key.
+   */
   public static void remove(String key) {
     CacheObject obj = objects.remove(key);
     obj.delete();
     scheduleFlush();
   }
 
+  /**
+   * Create a new cache object.
+   * @param key       Cache object's key.
+   * @param priority  Eviction priority of the object.
+   * @param suffix    File name suffix.
+   * @return          The created cache object.
+   */
   public static CacheObject create(String key, CachePriority priority, @Nullable String suffix) throws IOException {
     CacheObject obj = new CacheObject(key, priority, suffix, cacheDirectory);
     objects.put(key, obj);
@@ -94,6 +110,9 @@ public class Cache {
     return obj;
   }
 
+  /**
+   * Flush any changes to the cache to disk.
+   */
   public static void flush() throws IOException {
     JsonObject cacheObjects = new JsonObject();
     for (Map.Entry<String, CacheObject> entry : objects.entrySet()) {

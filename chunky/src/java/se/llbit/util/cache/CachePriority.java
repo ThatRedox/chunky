@@ -19,5 +19,28 @@
 package se.llbit.util.cache;
 
 public enum CachePriority {
-  LOWEST, LOW, NORMAL, HIGH, HIGHEST
+  /**
+   * Lowest priority. First to be evicted.
+   */
+  LOWEST,
+  /**
+   * Low priority to be kept.
+   */
+  LOW,
+  /**
+   * Normal priority to be kept.
+   */
+  NORMAL,
+  /**
+   * High priority to be kept.
+   */
+  HIGH,
+  /**
+   * Very high priority to be kept.
+   */
+  HIGHEST,
+  /**
+   * Always keep.
+   */
+  NEVER,
 }

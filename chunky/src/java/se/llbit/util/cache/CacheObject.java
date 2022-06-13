@@ -40,7 +40,7 @@ public class CacheObject implements Comparable<CacheObject> {
     this.lastAccessed = lastAccessed;
   }
 
-  public static Optional<CacheObject> deserialize(String key, JsonObject obj) {
+  protected static Optional<CacheObject> deserialize(String key, JsonObject obj) {
     String priority = obj.get("priority").asString(null);
     if (priority == null) return Optional.empty();
     CachePriority cachePriority;
