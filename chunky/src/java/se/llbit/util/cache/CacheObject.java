@@ -22,22 +22,23 @@ import se.llbit.json.JsonObject;
 import se.llbit.log.Log;
 import se.llbit.util.annotation.Nullable;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class CacheObject implements Comparable<CacheObject> {
   public final String key;
   public final CachePriority priority;
-  private long lastAccessed;
   private final File file;
+  private final ReentrantLock lock = new ReentrantLock();
+  private boolean visible = true;
 
-  protected CacheObject(String key, CachePriority priority, File file, long lastAccessed) {
+  protected CacheObject(String key, CachePriority priority, File file) {
     this.key = key;
     this.priority = priority;
     this.file = file;
-    this.lastAccessed = lastAccessed;
   }
 
   protected static Optional<CacheObject> deserialize(String key, JsonObject obj) {
@@ -58,7 +59,7 @@ public class CacheObject implements Comparable<CacheObject> {
     long lastAccessed = obj.get("lastAccessed").asLong(0);
     if (lastAccessed == 0) return Optional.empty();
 
-    return Optional.of(new CacheObject(key, cachePriority, file, lastAccessed));
+    return Optional.of(new CacheObject(key, cachePriority, file));
   }
 
   protected CacheObject(String key, CachePriority priority, @Nullable String suffix, File baseDir) throws IOException {
@@ -72,27 +73,102 @@ public class CacheObject implements Comparable<CacheObject> {
     this.key = key;
     this.priority = priority;
     this.file = file;
-    this.lastAccessed = System.currentTimeMillis();
   }
 
   protected JsonObject serialize() {
     JsonObject obj = new JsonObject();
     obj.add("priority", priority.toString());
     obj.add("file", file.toString());
-    obj.add("lastAccessed", lastAccessed != 0 ? lastAccessed : 1);
     return obj;
   }
 
-  protected void delete() {
+  private void deleteFile() {
     if (!file.delete()) {
-      Log.infof("Failed to delete cache file %s. Attempting to delete on exit.", file);
+      Log.errorf("Failed to delete cache file %s. Attempting to delete on exit.", file);
       file.deleteOnExit();
     }
   }
 
-  public File get() {
-    lastAccessed = System.currentTimeMillis();
-    return file;
+  /**
+   * Delete this object from the cache.
+   */
+  public void delete() {
+    Cache.remove(key);
+    visible = false;
+    if (lock.tryLock()) {
+      try {
+        deleteFile();
+      } finally {
+        lock.unlock();
+      }
+    }
+  }
+
+  /**
+   * Get the underlying file.
+   * @return              File guard with the file. While this guard is not closed, the wrapped file will be valid.
+   * @throws IOException  Cache was deleted.
+   */
+  public FileGuard getFile() throws IOException {
+    lock.lock();
+    if (!visible)
+      throw new IOException("Cache object with key \"" + key + "\" has been deleted.");
+    return new FileGuard();
+  }
+
+  /**
+   * @return Bytes in this cache.
+   */
+  public byte[] getBytes() throws IOException {
+    try (FileGuard guard = getFile()) {
+      File file = guard.get();
+
+      // Create an output with a buffer hint of the file size
+      ByteArrayOutputStream os = new ByteArrayOutputStream((int) file.length());
+
+      // Copy from input to output with a buffer
+      byte[] buffer = new byte[8192];
+      try (InputStream is = Files.newInputStream(file.toPath())) {
+        int len;
+        do {
+          len = is.read(buffer);
+          os.write(buffer, 0, len);
+        } while (len > 0);
+      }
+
+      return os.toByteArray();
+    }
+  }
+
+  /**
+   * Set the value of the cache.
+   */
+  public void setBytes(byte[] bytes) throws IOException {
+    try (FileGuard guard = getFile()) {
+      try (OutputStream os = Files.newOutputStream(guard.get().toPath())) {
+        os.write(bytes);
+      }
+    }
+  }
+
+  public class FileGuard implements AutoCloseable {
+    private FileGuard() {
+      assert CacheObject.this.lock.isHeldByCurrentThread();
+    }
+
+    public File get() {
+      return CacheObject.this.file;
+    }
+
+    @Override
+    public void close() {
+      boolean r = file.setLastModified(System.currentTimeMillis());
+      assert r;
+
+      if (!CacheObject.this.visible)
+        deleteFile();
+      CacheObject.this.lock.unlock();
+    }
   }
 
   @Override
@@ -100,7 +176,7 @@ public class CacheObject implements Comparable<CacheObject> {
     int cmp = this.priority.compareTo(other.priority);
     if (cmp != 0) return cmp;
 
-    return Long.compare(this.lastAccessed, other.lastAccessed);
+    return Long.compare(this.file.lastModified(), other.file.lastModified());
   }
 
   private static final Random NAME_RANDOM = new Random();

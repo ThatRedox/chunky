@@ -90,9 +90,8 @@ public class Cache {
    * Remove a cache object.
    * @param key   Cache object's key.
    */
-  public static void remove(String key) {
-    CacheObject obj = objects.remove(key);
-    obj.delete();
+  protected static void remove(String key) {
+    objects.remove(key);
     scheduleFlush();
   }
 
