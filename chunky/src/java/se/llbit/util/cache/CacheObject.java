@@ -18,7 +18,11 @@
 
 package se.llbit.util.cache;
 
+import com.google.gson.Gson;
 import se.llbit.json.JsonObject;
+import se.llbit.json.JsonParser;
+import se.llbit.json.JsonValue;
+import se.llbit.json.PrettyPrinter;
 import se.llbit.log.Log;
 import se.llbit.util.annotation.Nullable;
 
@@ -151,6 +155,20 @@ public class CacheObject implements Comparable<CacheObject> {
     }
   }
 
+  /**
+   * Get the value of the cache.
+   */
+  public String getString() throws IOException {
+    return new String(getBytes());
+  }
+
+  /**
+   * Set the value of the cache.
+   */
+  public void setString(String string) throws IOException {
+    setBytes(string.getBytes());
+  }
+
   public class FileGuard implements AutoCloseable {
     private FileGuard() {
       assert CacheObject.this.lock.isHeldByCurrentThread();
@@ -158,6 +176,14 @@ public class CacheObject implements Comparable<CacheObject> {
 
     public File get() {
       return CacheObject.this.file;
+    }
+
+    public InputStream getInputStream() throws IOException {
+      return new BufferedInputStream(Files.newInputStream(get().toPath()));
+    }
+
+    public OutputStream getOutputStream() throws IOException {
+      return new BufferedOutputStream(Files.newOutputStream(get().toPath()));
     }
 
     @Override

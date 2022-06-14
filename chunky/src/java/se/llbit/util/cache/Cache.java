@@ -102,11 +102,15 @@ public class Cache {
    * @param suffix    File name suffix.
    * @return          The created cache object.
    */
-  public static CacheObject create(String key, CachePriority priority, @Nullable String suffix) throws IOException {
-    CacheObject obj = new CacheObject(key, priority, suffix, cacheDirectory);
-    objects.put(key, obj);
-    scheduleFlush();
-    return obj;
+  public static Optional<CacheObject> create(String key, CachePriority priority, @Nullable String suffix) {
+    try {
+      CacheObject obj = new CacheObject(key, priority, suffix, cacheDirectory);
+      objects.put(key, obj);
+      scheduleFlush();
+      return Optional.of(obj);
+    } catch (IOException e) {
+      return Optional.empty();
+    }
   }
 
   /**

@@ -17,6 +17,9 @@
  */
 package se.llbit.chunky.ui.controller;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -34,7 +37,13 @@ import se.llbit.chunky.ui.TableSortConfigSerializer;
 import se.llbit.fxutil.Dialogs;
 import se.llbit.json.JsonObject;
 import se.llbit.json.JsonParser;
+import se.llbit.json.JsonValue;
 import se.llbit.log.Log;
+import se.llbit.util.annotation.Nullable;
+import se.llbit.util.cache.Cache;
+import se.llbit.util.cache.CacheObject;
+import se.llbit.util.cache.CachePriority;
+import se.llbit.util.gson.ReadOnlyObjectWrapperSerializer;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -46,6 +55,14 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class SceneChooserController implements Initializable {
+  private static final Gson GSON = new GsonBuilder()
+    .disableJdkUnsafe()
+    .registerTypeAdapter(new TypeToken<ReadOnlyObjectWrapperSerializer<Number>>() {}.getType(),
+                         new ReadOnlyObjectWrapperSerializer<>(Number.class))
+    .registerTypeAdapter(new TypeToken<ReadOnlyObjectWrapperSerializer<String>>() {}.getType(),
+                         new ReadOnlyObjectWrapperSerializer<>(String.class))
+    .create();
+
   @FXML private TableView<SceneListItem> sceneTbl;
   @FXML private TableColumn<SceneListItem, String> nameCol;
   @FXML private TableColumn<SceneListItem, Number> chunkCountCol;
@@ -64,8 +81,6 @@ public class SceneChooserController implements Initializable {
   private Stage stage;
 
   private ChunkyFxController controller;
-
-  private static final HashMap<FileTimeCache, SceneListItem> sceneListCache = new HashMap<>();
 
   @Override public void initialize(URL location, ResourceBundle resources) {
     exportBtn.setTooltip(new Tooltip("Exports the selected scene as a Zip archive."));
@@ -134,7 +149,7 @@ public class SceneChooserController implements Initializable {
     });
     chunkCountCol.setCellValueFactory(data -> {
       SceneListItem scene = data.getValue();
-      return scene.chunkSize;
+      return scene.chunkCount;
     });
     sizeCol.setCellValueFactory(data -> {
       SceneListItem scene = data.getValue();
@@ -215,8 +230,7 @@ public class SceneChooserController implements Initializable {
     fileList.sort(Comparator.comparing(File::length));
     Executor loadExecutor = Executors.newSingleThreadExecutor();
     for (File sceneFile : fileList) {
-      FileTimeCache file = new FileTimeCache(sceneFile);
-      scenes.add(sceneListCache.computeIfAbsent(file, f -> new SceneListItem(f.file, loadExecutor)));
+      scenes.add(new SceneListItem(sceneFile, loadExecutor));
     }
 
     scenes.sort(Comparator
@@ -249,22 +263,25 @@ public class SceneChooserController implements Initializable {
 
   private static class SceneListItem {
     /** The name of the scene */
-    public final String sceneName;
+    public String sceneName;
     /** The last modified time of the scene */
-    public final Date lastModified;
+    public Date lastModified;
     /** What folder the scene is in */
-    public final File sceneDirectory;
+    public File sceneDirectory;
     /** Whether this scene description file is a backup file and the original .json is missing. */
-    public final boolean isBackup;
+    public boolean isBackup;
 
     /** The number of chunks in the scene */
-    public final ReadOnlyObjectWrapper<Number> chunkSize;
+    public ReadOnlyObjectWrapper<Number> chunkCount;
     /** The dimensions of the scene canvas */
-    public final ReadOnlyObjectWrapper<String> dimensions;
+    public ReadOnlyObjectWrapper<String> dimensions;
     /** The spp count of the render */
-    public final ReadOnlyObjectWrapper<Number> sppCount;
+    public ReadOnlyObjectWrapper<Number> sppCount;
     /** The elapsed render time */
-    public final ReadOnlyObjectWrapper<Number> renderTime;
+    public ReadOnlyObjectWrapper<Number> renderTime;
+
+    // Needed for GSON
+    private SceneListItem() {}
 
     private SceneListItem(File sceneFile, Executor backgroundLoadExecutor) {
       this.sceneDirectory = sceneFile.getParentFile();
@@ -275,7 +292,7 @@ public class SceneChooserController implements Initializable {
           - (Scene.EXTENSION.length() + (isBackup ? ".backup".length() : 0));
       this.sceneName = sceneName.substring(0, lengthWithoutExtension);
 
-      this.chunkSize = new ReadOnlyObjectWrapper<>();
+      this.chunkCount = new ReadOnlyObjectWrapper<>();
       this.dimensions = new ReadOnlyObjectWrapper<>();
       this.sppCount = new ReadOnlyObjectWrapper<>();
       this.renderTime = new ReadOnlyObjectWrapper<>();
@@ -301,6 +318,21 @@ public class SceneChooserController implements Initializable {
     }
 
     private void parseScene(File sceneFile) {
+      String key = "SceneChooser1" + sceneFile;
+      Optional<CacheObject> cache = Cache.get(key);
+      if (cache.isPresent()) {
+        try {
+          SceneListItem item = GSON.fromJson(cache.get().getString(), SceneListItem.class);
+          if (item.lastModified.getTime() >= this.lastModified.getTime()) {
+            this.dimensions.set(item.dimensions.get());
+            this.chunkCount.set(item.chunkCount.get());
+            this.sppCount.set(item.sppCount.get());
+            this.renderTime.set(item.renderTime.get());
+            return;
+          }
+        } catch (IOException ignored) {}
+      }
+
       String dimensions = null;
       Integer chunkSize = null;
       Integer sppCount = null;
@@ -335,9 +367,21 @@ public class SceneChooserController implements Initializable {
       }
 
       this.dimensions.setValue(dimensions);
-      this.chunkSize.setValue(chunkSize);
+      this.chunkCount.setValue(chunkSize);
       this.sppCount.setValue(sppCount);
       this.renderTime.setValue(renderTime);
+
+      if (cache.isPresent()) {
+        try {
+          cache.get().setString(GSON.toJson(this));
+        } catch (IOException ignored) {}
+      } else {
+        Cache.create(key, CachePriority.NORMAL, null).ifPresent(c -> {
+          try {
+            c.setString(GSON.toJson(this));
+          } catch (IOException ignored) {}
+        });
+      }
 
 //      Log.infof("Finished parsing: %s", this);
     }
@@ -345,35 +389,12 @@ public class SceneChooserController implements Initializable {
     @Override
     public String toString() {
       String dimensions = this.dimensions.get() != null ? this.dimensions.get() : "-";
-      String chunkSize = this.chunkSize.get() != null ? this.chunkSize.get().toString() : "-";
+      String chunkSize = this.chunkCount.get() != null ? this.chunkCount.get().toString() : "-";
       String sppCount = this.sppCount.get() != null ? this.sppCount.get().toString() : "-";
       String renderTime = this.renderTime.get() != null ? renderTimeString(this.renderTime.get().longValue()) : "-";
 
       return String.format("Name:%s, Chunks:%s, Size:%s, Spp:%s, Time:%s, Location:%s",
           sceneName, chunkSize, dimensions, sppCount, renderTime, sceneDirectory.getName());
-    }
-  }
-
-  private static class FileTimeCache {
-    public final File file;
-    public final long lastModified;
-
-    public FileTimeCache(File file) {
-      this.file = file;
-      this.lastModified = file.lastModified();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      FileTimeCache that = (FileTimeCache) o;
-      return lastModified == that.lastModified && Objects.equals(file, that.file);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(file, lastModified);
     }
   }
 }
