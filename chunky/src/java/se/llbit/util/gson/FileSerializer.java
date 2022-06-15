@@ -16,31 +16,21 @@
  * along with Chunky.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package se.llbit.util.cache;
+package se.llbit.util.gson;
 
-public enum CachePriority {
-  /**
-   * Lowest priority. First to be evicted.
-   */
-  LOWEST,
-  /**
-   * Low priority to be kept.
-   */
-  LOW,
-  /**
-   * Normal priority to be kept.
-   */
-  NORMAL,
-  /**
-   * High priority to be kept.
-   */
-  HIGH,
-  /**
-   * Very high priority to be kept.
-   */
-  HIGHEST,
-  /**
-   * Always keep.
-   */
-  NEVER,
+import com.google.gson.*;
+
+import java.io.File;
+import java.lang.reflect.Type;
+
+public class FileSerializer implements JsonSerializer<File>, JsonDeserializer<File> {
+  @Override
+  public File deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+    return new File(json.getAsString());
+  }
+
+  @Override
+  public JsonElement serialize(File src, Type typeOfSrc, JsonSerializationContext context) {
+    return new JsonPrimitive(src.toString());
+  }
 }

@@ -19,6 +19,7 @@ package se.llbit.chunky.ui.controller;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
@@ -37,18 +38,15 @@ import se.llbit.chunky.ui.TableSortConfigSerializer;
 import se.llbit.fxutil.Dialogs;
 import se.llbit.json.JsonObject;
 import se.llbit.json.JsonParser;
-import se.llbit.json.JsonValue;
 import se.llbit.log.Log;
-import se.llbit.util.annotation.Nullable;
-import se.llbit.util.cache.Cache;
-import se.llbit.util.cache.CacheObject;
-import se.llbit.util.cache.CachePriority;
-import se.llbit.util.gson.ReadOnlyObjectWrapperSerializer;
+import se.llbit.util.cache.DiskCache;
+import se.llbit.util.gson.DateSerializer;
+import se.llbit.util.gson.FileSerializer;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.text.DateFormat;
 import java.util.*;
 import java.util.concurrent.Executor;
@@ -57,10 +55,8 @@ import java.util.concurrent.Executors;
 public class SceneChooserController implements Initializable {
   private static final Gson GSON = new GsonBuilder()
     .disableJdkUnsafe()
-    .registerTypeAdapter(new TypeToken<ReadOnlyObjectWrapperSerializer<Number>>() {}.getType(),
-                         new ReadOnlyObjectWrapperSerializer<>(Number.class))
-    .registerTypeAdapter(new TypeToken<ReadOnlyObjectWrapperSerializer<String>>() {}.getType(),
-                         new ReadOnlyObjectWrapperSerializer<>(String.class))
+    .registerTypeAdapter(Date.class, new DateSerializer())
+    .registerTypeAdapter(File.class, new FileSerializer())
     .create();
 
   @FXML private TableView<SceneListItem> sceneTbl;
@@ -271,14 +267,19 @@ public class SceneChooserController implements Initializable {
     /** Whether this scene description file is a backup file and the original .json is missing. */
     public boolean isBackup;
 
+    private int chunkCountValue;
+    private String dimensionsValue;
+    private int sppCountValue;
+    private long renderTimeValue;
+
     /** The number of chunks in the scene */
-    public ReadOnlyObjectWrapper<Number> chunkCount;
+    public transient final ReadOnlyObjectWrapper<Number> chunkCount = new ReadOnlyObjectWrapper<>();
     /** The dimensions of the scene canvas */
-    public ReadOnlyObjectWrapper<String> dimensions;
+    public transient final ReadOnlyObjectWrapper<String> dimensions = new ReadOnlyObjectWrapper<>();
     /** The spp count of the render */
-    public ReadOnlyObjectWrapper<Number> sppCount;
+    public transient final ReadOnlyObjectWrapper<Number> sppCount = new ReadOnlyObjectWrapper<>();
     /** The elapsed render time */
-    public ReadOnlyObjectWrapper<Number> renderTime;
+    public transient final ReadOnlyObjectWrapper<Number> renderTime = new ReadOnlyObjectWrapper<>();
 
     // Needed for GSON
     private SceneListItem() {}
@@ -291,11 +292,6 @@ public class SceneChooserController implements Initializable {
       int lengthWithoutExtension = sceneName.length()
           - (Scene.EXTENSION.length() + (isBackup ? ".backup".length() : 0));
       this.sceneName = sceneName.substring(0, lengthWithoutExtension);
-
-      this.chunkCount = new ReadOnlyObjectWrapper<>();
-      this.dimensions = new ReadOnlyObjectWrapper<>();
-      this.sppCount = new ReadOnlyObjectWrapper<>();
-      this.renderTime = new ReadOnlyObjectWrapper<>();
 
       backgroundLoadExecutor.execute(() -> parseScene(sceneFile));
     }
@@ -319,34 +315,30 @@ public class SceneChooserController implements Initializable {
 
     private void parseScene(File sceneFile) {
       String key = "SceneChooser1" + sceneFile;
-      Optional<CacheObject> cache = Cache.get(key);
+      Optional<String> cache = DiskCache.INSTANCE.getString(key);
       if (cache.isPresent()) {
         try {
-          SceneListItem item = GSON.fromJson(cache.get().getString(), SceneListItem.class);
+          SceneListItem item = GSON.fromJson(cache.get(), SceneListItem.class);
           if (item.lastModified.getTime() >= this.lastModified.getTime()) {
-            this.dimensions.set(item.dimensions.get());
-            this.chunkCount.set(item.chunkCount.get());
-            this.sppCount.set(item.sppCount.get());
-            this.renderTime.set(item.renderTime.get());
+            this.dimensions.set(item.dimensionsValue);
+            this.chunkCount.set(item.chunkCountValue);
+            this.sppCount.set(item.sppCountValue);
+            this.renderTime.set(item.renderTimeValue);
             return;
           }
-        } catch (IOException ignored) {}
+        } catch (JsonSyntaxException ignored) {
+        }
       }
 
-      String dimensions = null;
-      Integer chunkSize = null;
-      Integer sppCount = null;
-      Long renderTime = null;
-
-      try (JsonParser parser = new JsonParser(new FileInputStream(new File(sceneFile.getParentFile(), sceneFile.getName())))) {
+      try (JsonParser parser = new JsonParser(Files.newInputStream(new File(sceneFile.getParentFile(), sceneFile.getName()).toPath()))) {
         JsonObject scene = parser.parse().object();
 
         int width = scene.get("width").intValue(400);
         int height = scene.get("height").intValue(400);
-        dimensions = String.format("%sx%s", width, height);
+        dimensionsValue = String.format("%sx%s", width, height);
 
-        chunkSize = scene.get("chunkList").array().size();
-        sppCount = scene.get("spp").intValue(0);
+        chunkCountValue = scene.get("chunkList").array().size();
+        sppCountValue = scene.get("spp").intValue(0);
 
         // Not currently used (Planned for Chunky 2.5.0; See PR #786)
         //    JsonValue crop = scene.get("crop");
@@ -361,29 +353,17 @@ public class SceneChooserController implements Initializable {
         //      } else cropping = null;
         //    } else cropping = null;
 
-        renderTime = scene.get("renderTime").longValue(0);
+        renderTimeValue = scene.get("renderTime").longValue(0);
       } catch (IOException | JsonParser.SyntaxError e) {
         Log.warnf("Warning: could not load scene description: %s", sceneFile.getName());
       }
 
-      this.dimensions.setValue(dimensions);
-      this.chunkCount.setValue(chunkSize);
-      this.sppCount.setValue(sppCount);
-      this.renderTime.setValue(renderTime);
+      this.dimensions.setValue(dimensionsValue);
+      this.chunkCount.setValue(chunkCountValue);
+      this.sppCount.setValue(sppCountValue);
+      this.renderTime.setValue(renderTimeValue);
 
-      if (cache.isPresent()) {
-        try {
-          cache.get().setString(GSON.toJson(this));
-        } catch (IOException ignored) {}
-      } else {
-        Cache.create(key, CachePriority.NORMAL, null).ifPresent(c -> {
-          try {
-            c.setString(GSON.toJson(this));
-          } catch (IOException ignored) {}
-        });
-      }
-
-//      Log.infof("Finished parsing: %s", this);
+      DiskCache.INSTANCE.put(key, GSON.toJson(this));
     }
 
     @Override

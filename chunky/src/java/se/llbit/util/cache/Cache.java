@@ -17,124 +17,69 @@
 
 package se.llbit.util.cache;
 
-import se.llbit.chunky.PersistentSettings;
-import se.llbit.chunky.main.Chunky;
-import se.llbit.json.JsonMember;
-import se.llbit.json.JsonObject;
-import se.llbit.json.JsonParser;
-import se.llbit.json.PrettyPrinter;
-import se.llbit.log.Log;
-import se.llbit.util.annotation.Nullable;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
-public class Cache {
-  private static final ConcurrentHashMap<String, CacheObject> objects = new ConcurrentHashMap<>();
-  private static File cacheDirectory;
-  private static final AtomicBoolean needFlush = new AtomicBoolean(false);
+public interface Cache {
+  /**
+   * Get the bytes entry corresponding to a given key. If there is an entry, an Optional
+   * wrapping the entry is returned. If not, an empty Optional is returned.
+   */
+  Optional<byte[]> getBytes(String key);
 
-  static { init(); }
-  private static void init() {
-    cacheDirectory = PersistentSettings.cacheDirectory();
-
-    File cacheJson = new File(PersistentSettings.cacheDirectory(), "cache.json");
-    if (!cacheJson.exists()) cacheJson = new File(PersistentSettings.cacheDirectory(), "cache.json.backup");
-    if (!cacheJson.exists()) return;
-
-    JsonObject obj;
-    try (InputStream is = new BufferedInputStream(Files.newInputStream(cacheJson.toPath()));
-         JsonParser parser = new JsonParser(is)) {
-      obj = parser.parse().asObject();
-    } catch (IOException | JsonParser.SyntaxError e) {
-      Log.warn("Error reading cache.json", e);
-      return;
-    }
-
-    for (JsonMember entry : obj.get("objects").asObject()) {
-      String key = entry.getName();
-      CacheObject.deserialize(key, entry.getValue().asObject())
-          .ifPresent(cacheObject -> objects.put(key, cacheObject));
-    }
-  }
-
-  private static void checkedFlush() {
-    if (needFlush.compareAndSet(true, false)) {
-      try {
-        flush();
-      } catch (IOException e) {
-        Log.warn("Failed to flush changes to cache: ", e);
-      }
-    }
-  }
-
-  private static void scheduleFlush() {
-    needFlush.set(true);
-    Chunky.getCommonThreads().submit(Cache::checkedFlush);
+  /**
+   * Get the string entry corresponding to a given key. If there is an entry, an Optional
+   * wrapping the entry is returned. If not, an empty Optional is returned.
+   */
+  default Optional<String> getString(String key) {
+    return getBytes(key).map(String::new);
   }
 
   /**
-   * Get a cache object from it's key.
-   * @param key   Cache object's key.
-   * @return      Optional containing the CacheObject if it exists.
+   * Get the bytes entry corresponding to a given key. If there is no entry, the given
+   * loader is called and it's value is entered into the cache and returned.
    */
-  public static Optional<CacheObject> get(String key) {
-    return Optional.ofNullable(objects.getOrDefault(key, null));
+  default byte[] computeBytesIfAbsent(String key, Supplier<byte[]> loader) {
+    Optional<byte[]> entry = getBytes(key);
+    if (entry.isPresent()) return entry.get();
+    byte[] out = loader.get();
+    put(key, out);
+    return out;
   }
 
   /**
-   * Remove a cache object.
-   * @param key   Cache object's key.
+   * Get the String entry corresponding to a given key. If there is no entry, the given
+   * loader is called and it's value is entered into the cache and returned.
    */
-  protected static void remove(String key) {
-    objects.remove(key);
-    scheduleFlush();
+  default String computeStringIfAbsent(String key, Supplier<String> loader) {
+    Optional<String> entry = getString(key);
+    if (entry.isPresent()) return entry.get();
+    String out = loader.get();
+    put(key, out);
+    return out;
   }
 
   /**
-   * Create a new cache object.
-   * @param key       Cache object's key.
-   * @param priority  Eviction priority of the object.
-   * @param suffix    File name suffix.
-   * @return          The created cache object.
+   * Insert a bytes entry with the given key. If there already is an entry, the new value
+   * will overwrite the previous entry.
    */
-  public static Optional<CacheObject> create(String key, CachePriority priority, @Nullable String suffix) {
-    try {
-      CacheObject obj = new CacheObject(key, priority, suffix, cacheDirectory);
-      objects.put(key, obj);
-      scheduleFlush();
-      return Optional.of(obj);
-    } catch (IOException e) {
-      return Optional.empty();
-    }
+  void put(String key, byte[] entry);
+
+  /**
+   * Insert a String entry with the given key. If there is already an entry, the new value
+   * will overwrite the previous entry.
+   */
+  default void put(String key, String entry) {
+    put(key, entry.getBytes());
   }
 
   /**
-   * Flush any changes to the cache to disk.
+   * Invalidate the entry with the given key.
    */
-  public static void flush() throws IOException {
-    JsonObject cacheObjects = new JsonObject();
-    for (Map.Entry<String, CacheObject> entry : objects.entrySet()) {
-      cacheObjects.add(entry.getKey(), entry.getValue().serialize());
-    }
+  void invalidate(String key);
 
-    JsonObject base = new JsonObject();
-    base.add("objects", cacheObjects);
-
-    File cacheJson = new File(cacheDirectory, "cache.json");
-    File backupJson = new File(cacheDirectory, "cache.json.backup");
-
-    if (cacheJson.exists()) {
-      Files.copy(cacheJson.toPath(), backupJson.toPath());
-    }
-
-    try (PrettyPrinter printer = new PrettyPrinter("", new PrintStream(
-        new BufferedOutputStream(Files.newOutputStream(cacheJson.toPath()))))) {
-      base.prettyPrint(printer);
-    }
-  }
+  /**
+   * Run any maintenence operations if applicable.
+   */
+  void flush();
 }

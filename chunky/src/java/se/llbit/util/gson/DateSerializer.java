@@ -19,25 +19,22 @@
 package se.llbit.util.gson;
 
 import com.google.gson.*;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 
 import java.lang.reflect.Type;
+import java.util.Date;
 
-public class ReadOnlyObjectWrapperSerializer<T> implements JsonSerializer<ReadOnlyObjectWrapper<T>>, JsonDeserializer<ReadOnlyObjectWrapper<T>> {
-  private final Class<T> typeOfT;
-
-  public ReadOnlyObjectWrapperSerializer(Class<T> typeOfT) {
-    this.typeOfT = typeOfT;
+public class DateSerializer implements JsonSerializer<Date>, JsonDeserializer<Date> {
+  @Override
+  public Date deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+    try {
+      return new Date(json.getAsLong());
+    } catch (NumberFormatException e) {
+      throw new JsonSyntaxException(e);
+    }
   }
 
   @Override
-  public ReadOnlyObjectWrapper<T> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-    T obj = context.deserialize(json, this.typeOfT);
-    return new ReadOnlyObjectWrapper<>(obj);
-  }
-
-  @Override
-  public JsonElement serialize(ReadOnlyObjectWrapper<T> src, Type typeOfSrc, JsonSerializationContext context) {
-    return context.serialize(src.get(), typeOfT);
+  public JsonElement serialize(Date src, Type typeOfSrc, JsonSerializationContext context) {
+    return new JsonPrimitive(src.getTime());
   }
 }
