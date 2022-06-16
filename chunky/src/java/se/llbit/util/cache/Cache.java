@@ -79,6 +79,11 @@ public interface Cache {
   void invalidate(String key);
 
   /**
+   * Invalidate all entries to the cache.
+   */
+  void invalidateAll();
+
+  /**
    * Run any maintenence operations if applicable.
    */
   void flush();

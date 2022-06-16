@@ -22,7 +22,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import se.llbit.chunky.PersistentSettings;
-import se.llbit.chunky.main.Chunky;
 import se.llbit.log.Log;
 import se.llbit.util.gson.FileSerializer;
 
@@ -30,6 +29,9 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -40,12 +42,14 @@ public class DiskCache implements Cache {
     .disableJdkUnsafe()
     .registerTypeAdapter(File.class, new FileSerializer())
     .create();
+  private static final ScheduledExecutorService FLUSH_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
+  private static final long FLUSH_DELAY = 1000;
 
   public static final DiskCache INSTANCE = new DiskCache(PersistentSettings.cacheDirectory(), PersistentSettings.getCacheSize());
 
   private final PersistentData persistentData;
   private final ReentrantLock lock = new ReentrantLock();
-  private final AtomicBoolean dirty = new AtomicBoolean();
+  private final AtomicBoolean flushScheduled = new AtomicBoolean();
   private final File cacheDirectory;
   private final File cacheFile;
   private final File cacheBackup;
@@ -154,6 +158,8 @@ public class DiskCache implements Cache {
       // succeed. It will also fail if the file is new.
       file.setLastModified(System.currentTimeMillis());
 
+      scheduleFlush();
+
       return file;
     } finally {
       lock.unlock();
@@ -170,6 +176,7 @@ public class DiskCache implements Cache {
           file.deleteOnExit();
         }
       }
+      scheduleFlush();
     } finally {
       lock.unlock();
     }
@@ -211,7 +218,6 @@ public class DiskCache implements Cache {
   @Override
   public void put(String key, byte[] entry) {
     lock.lock();
-    dirty.set(true);
     try {
       File entryFile = persistentData.entryMap.get(key);
       if (entryFile == null) {
@@ -233,7 +239,6 @@ public class DiskCache implements Cache {
   @Override
   public void invalidate(String key) {
     lock.lock();
-    dirty.set(true);
     try {
       File entry = persistentData.entryMap.remove(key);
       if (entry != null) {
@@ -250,9 +255,28 @@ public class DiskCache implements Cache {
   }
 
   @Override
+  public void invalidateAll() {
+    lock.lock();
+    try {
+      ArrayList<File> files = new ArrayList<>(persistentData.entryMap.values());
+      persistentData.entryMap.clear();
+
+      files.forEach(file -> {
+        if (!file.delete()) {
+          Log.warnf("Failed to delete cache object: %s", file);
+          persistentData.toDelete.add(file);
+          file.deleteOnExit();
+        }
+      });
+      scheduleFlush();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @Override
   public void flush() {
     lock.lock();
-    dirty.set(false);
     try {
       if (cacheFile.exists()) {
         Files.copy(cacheFile.toPath(), cacheBackup.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -268,17 +292,12 @@ public class DiskCache implements Cache {
   }
 
   protected void scheduleFlush() {
-    Chunky.getCommonThreads().submit(this::checkedFlush);
-  }
-
-  private void checkedFlush() {
-    lock.lock();
-    try {
-      if (dirty.compareAndSet(true, false)) {
+    if (flushScheduled.compareAndSet(false, true)) {
+      FLUSH_EXECUTOR.schedule(() -> {
+        flushScheduled.set(false);
         flush();
-      }
-    } finally {
-      lock.unlock();
+        Log.info("Disk cache flushed to disk.");
+      }, FLUSH_DELAY, TimeUnit.MILLISECONDS);
     }
   }
 
