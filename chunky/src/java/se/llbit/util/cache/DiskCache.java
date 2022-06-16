@@ -21,16 +21,15 @@ package se.llbit.util.cache;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 import se.llbit.chunky.PersistentSettings;
 import se.llbit.chunky.main.Chunky;
 import se.llbit.log.Log;
 import se.llbit.util.gson.FileSerializer;
 
 import java.io.*;
-import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.Random;
@@ -45,34 +44,87 @@ public class DiskCache implements Cache {
 
   public static final DiskCache INSTANCE = new DiskCache(PersistentSettings.cacheDirectory());
 
-  private final HashMap<String, File> entryMap = new HashMap<>();
+  private final PersistentData persistentData;
   private final ReentrantLock lock = new ReentrantLock();
   private final AtomicBoolean dirty = new AtomicBoolean();
   private final File cacheDirectory;
   private final File cacheFile;
   private final File cacheBackup;
 
+  private static class PersistentData {
+    public HashMap<String, File> entryMap = new HashMap<>();
+    public HashMap<String, File> fileMap = new HashMap<>();
+    public ArrayList<File> toDelete = new ArrayList<>();
+  }
+
   public DiskCache(File cacheDirectory) {
     this.cacheDirectory = cacheDirectory;
     this.cacheFile = new File(cacheDirectory, "cache.json");
     this.cacheBackup = new File(cacheDirectory, "cache.json.backup");
 
-    HashMap<String, File> diskMap = null;
-    Type type = new TypeToken<HashMap<String, File>>() {}.getType();
+    PersistentData data = null;
     try (BufferedReader reader = Files.newBufferedReader(cacheFile.toPath())) {
-      diskMap = GSON.fromJson(reader, type);
+      data = GSON.fromJson(reader, PersistentData.class);
     } catch (IOException | JsonSyntaxException ignored) {
     }
 
-    if (diskMap == null) {
+    if (data == null) {
       try (BufferedReader reader = Files.newBufferedReader(cacheBackup.toPath())) {
-        diskMap = GSON.fromJson(reader, type);
+        data = GSON.fromJson(reader, PersistentData.class);
       } catch (IOException | JsonSyntaxException ignored) {
       }
     }
 
-    if (diskMap != null) {
-      entryMap.putAll(diskMap);
+    if (data == null) {
+      data = new PersistentData();
+    }
+
+    this.persistentData = data;
+
+    ArrayList<File> removed = new ArrayList<>();
+    for (File file : data.toDelete) {
+      if (!file.exists()) {
+        removed.add(file);
+      } else if (file.delete()) {
+        removed.add(file);
+      }
+    }
+    data.toDelete.removeAll(removed);
+  }
+
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  public File getFile(String key, String extension) {
+    lock.lock();
+    try {
+      File file = persistentData.fileMap.get(key);
+      if (file == null || !file.toString().endsWith("." + extension)) {
+        if (file != null) persistentData.toDelete.add(file);
+        file = new File(cacheDirectory, randomName(10) + "." + extension);
+        persistentData.fileMap.put(key, file);
+      }
+
+      // This gives a result that we ignore. This is for housekeeping and is not critical to
+      // succeed. It will also fail if the file is new.
+      file.setLastModified(System.currentTimeMillis());
+
+      return file;
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  public void invalidateFile(String key) {
+    lock.lock();
+    try {
+      File file = persistentData.fileMap.remove(key);
+      if (file != null) {
+        if (!file.delete()) {
+          persistentData.toDelete.add(file);
+          file.deleteOnExit();
+        }
+      }
+    } finally {
+      lock.unlock();
     }
   }
 
@@ -80,7 +132,7 @@ public class DiskCache implements Cache {
   public Optional<byte[]> getBytes(String key) {
     lock.lock();
     try {
-      File entry = entryMap.get(key);
+      File entry = persistentData.entryMap.get(key);
       if (entry == null) return Optional.empty();
 
       boolean r = entry.setLastModified(System.currentTimeMillis());
@@ -114,14 +166,14 @@ public class DiskCache implements Cache {
     lock.lock();
     dirty.set(true);
     try {
-      File entryFile = entryMap.get(key);
+      File entryFile = persistentData.entryMap.get(key);
       if (entryFile == null) {
         entryFile = new File(cacheDirectory, randomName(8));
       }
 
       try (OutputStream os = Files.newOutputStream(entryFile.toPath())) {
         os.write(entry);
-        entryMap.put(key, entryFile);
+        persistentData.entryMap.put(key, entryFile);
       } catch (IOException e) {
         Log.info("Failed to write cache object: ", e);
       }
@@ -136,10 +188,11 @@ public class DiskCache implements Cache {
     lock.lock();
     dirty.set(true);
     try {
-      File entry = entryMap.remove(key);
+      File entry = persistentData.entryMap.remove(key);
       if (entry != null) {
         if (!entry.delete()) {
           Log.warnf("Failed to delete cache object: %s", key);
+          persistentData.toDelete.add(entry);
           entry.deleteOnExit();
         }
       }
@@ -158,7 +211,7 @@ public class DiskCache implements Cache {
         Files.copy(cacheFile.toPath(), cacheBackup.toPath(), StandardCopyOption.REPLACE_EXISTING);
       }
       try (BufferedWriter writer = Files.newBufferedWriter(cacheFile.toPath())) {
-        writer.write(GSON.toJson(this.entryMap));
+        writer.write(GSON.toJson(this.persistentData));
       }
     } catch (IOException e) {
       Log.warn("Failed to flush cache to disk: ", e);
