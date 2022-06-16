@@ -22,6 +22,7 @@ import java.io.File;
 import se.llbit.chunky.renderer.RenderConstants;
 import se.llbit.chunky.resources.SettingsDirectory;
 import se.llbit.fxutil.WindowPosition;
+import se.llbit.json.Json;
 import se.llbit.json.JsonArray;
 import se.llbit.json.JsonObject;
 import se.llbit.json.JsonValue;
@@ -72,6 +73,11 @@ public final class PersistentSettings {
    */
   public static final int DEFAULT_3D_CANVAS_HEIGHT = 400;
 
+  /**
+   * Default cache size. (4 GB)
+   */
+  public static final long DEFAULT_CACHE_SIZE = 1L << 32;
+
 
   private static File settingsDir;
   private static File cacheDir;
@@ -103,6 +109,18 @@ public final class PersistentSettings {
 
   public static File cacheDirectory() {
     return cacheDir;
+  }
+
+  /**
+   * @return The cache size hint.
+   */
+  public static long getCacheSize() {
+    return settings.get("cacheSize").longValue(DEFAULT_CACHE_SIZE);
+  }
+
+  public static void setCacheSize(long size) {
+    settings.set("cacheSize", Json.of(size));
+    save();
   }
 
   /**

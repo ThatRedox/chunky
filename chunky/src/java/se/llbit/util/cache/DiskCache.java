@@ -29,12 +29,11 @@ import se.llbit.util.gson.FileSerializer;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DiskCache implements Cache {
   private static final Gson GSON = new GsonBuilder()
@@ -42,7 +41,7 @@ public class DiskCache implements Cache {
     .registerTypeAdapter(File.class, new FileSerializer())
     .create();
 
-  public static final DiskCache INSTANCE = new DiskCache(PersistentSettings.cacheDirectory());
+  public static final DiskCache INSTANCE = new DiskCache(PersistentSettings.cacheDirectory(), PersistentSettings.getCacheSize());
 
   private final PersistentData persistentData;
   private final ReentrantLock lock = new ReentrantLock();
@@ -51,13 +50,15 @@ public class DiskCache implements Cache {
   private final File cacheFile;
   private final File cacheBackup;
 
+  private static final Comparator<Map.Entry<String, File>> fileAgeComparator = Comparator.comparing(entry -> entry.getValue().lastModified());
+
   private static class PersistentData {
     public HashMap<String, File> entryMap = new HashMap<>();
     public HashMap<String, File> fileMap = new HashMap<>();
     public ArrayList<File> toDelete = new ArrayList<>();
   }
 
-  public DiskCache(File cacheDirectory) {
+  public DiskCache(File cacheDirectory, long cacheSize) {
     this.cacheDirectory = cacheDirectory;
     this.cacheFile = new File(cacheDirectory, "cache.json");
     this.cacheBackup = new File(cacheDirectory, "cache.json.backup");
@@ -81,6 +82,50 @@ public class DiskCache implements Cache {
 
     this.persistentData = data;
 
+    long realSize = Stream.concat(data.fileMap.values().stream(), data.entryMap.values().stream())
+      .mapToLong(File::length).sum();
+    if (realSize > cacheSize) {
+      long targetSize = (long) (cacheSize * 0.8);
+      long totalSize = 0;
+
+      ArrayDeque<Map.Entry<String, File>> fileMapFiles = data.fileMap.entrySet().stream()
+        .sorted(fileAgeComparator.reversed())
+        .collect(Collectors.toCollection(ArrayDeque::new));
+      ArrayDeque<Map.Entry<String, File>> entryMapFiles = data.entryMap.entrySet().stream()
+        .sorted(fileAgeComparator.reversed())
+        .collect(Collectors.toCollection(ArrayDeque::new));
+
+      while (totalSize <= targetSize) {
+        Map.Entry<String, File> file, fmap, emap;
+        fmap = fileMapFiles.peekFirst();
+        emap = entryMapFiles.peekFirst();
+
+        if (fmap == null && emap == null) {
+          break;
+        } else if (fmap == null) {
+          file = entryMapFiles.getFirst();
+        } else if (emap == null) {
+          file = fileMapFiles.getFirst();
+        } else if (fmap.getValue().lastModified() > emap.getValue().lastModified() ){
+          file = fileMapFiles.getFirst();
+        } else {
+          file = entryMapFiles.getFirst();
+        }
+        totalSize += file.getValue().length();
+      }
+
+      fileMapFiles.stream()
+        .map(Map.Entry::getKey)
+        .map(persistentData.fileMap::remove)
+        .filter(Objects::nonNull)
+        .forEach(persistentData.toDelete::add);
+      entryMapFiles.stream()
+        .map(Map.Entry::getKey)
+        .map(persistentData.entryMap::remove)
+        .filter(Objects::nonNull)
+        .forEach(persistentData.toDelete::add);
+    }
+
     ArrayList<File> removed = new ArrayList<>();
     for (File file : data.toDelete) {
       if (!file.exists()) {
@@ -90,6 +135,8 @@ public class DiskCache implements Cache {
       }
     }
     data.toDelete.removeAll(removed);
+
+    scheduleFlush();
   }
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
