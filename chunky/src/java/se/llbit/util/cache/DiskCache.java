@@ -50,7 +50,7 @@ public class DiskCache implements Cache {
   private final File cacheFile;
   private final File cacheBackup;
 
-  private static final Comparator<Map.Entry<String, File>> fileAgeComparator = Comparator.comparing(entry -> entry.getValue().lastModified());
+  private static final Comparator<Map.Entry<String, File>> fileAgeComparator = Comparator.comparingLong(entry -> entry.getValue().lastModified());
 
   private static class PersistentData {
     public HashMap<String, File> entryMap = new HashMap<>();
