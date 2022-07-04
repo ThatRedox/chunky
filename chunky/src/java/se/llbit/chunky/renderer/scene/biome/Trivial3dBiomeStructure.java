@@ -1,6 +1,7 @@
 package se.llbit.chunky.renderer.scene.biome;
 
 import it.unimi.dsi.fastutil.objects.Object2ReferenceMap;
+import se.llbit.math.Vector3i;
 import se.llbit.math.structures.Position3d2ReferencePackedArrayStructure;
 import se.llbit.util.annotation.NotNull;
 
@@ -77,6 +78,46 @@ public class Trivial3dBiomeStructure implements BiomeStructure.Factory {
   @Override
   public String getId() {
     return ID;
+  }
+
+  static class Loader extends BiomeLoader3d {
+    Trivial3dBiomeStructure.Impl grass = new Impl();
+    Trivial3dBiomeStructure.Impl foliage = new Impl();
+    Trivial3dBiomeStructure.Impl water = new Impl();
+
+    @Override
+    protected void setChunk(int cx, int cy, int cz, Vector3i origin, float[][][][] chunkGrass, float[][][][] chunkFoliage, float[][][][] chunkWater) {
+      grass.setCube(cx, cy, cz, flatten(chunkGrass));
+      foliage.setCube(cx, cy, cz, flatten(chunkFoliage));
+      water.setCube(cx, cy, cz, flatten(chunkWater));
+    }
+
+    private float[][] flatten(float[][][][] input) {
+      float[][] out = new float[16*16*16][3];
+      for (int z = 0; z < 16; z++) {
+        for (int y = 0; y < 16; y++) {
+          for (int x = 0; x < 16; x++) {
+            System.arraycopy(input[x][y][z], 0, out[z*16*16 + y*16 + x], 0, 3);
+          }
+        }
+      }
+      return out;
+    }
+
+    @Override
+    public BiomeStructure buildGrass() {
+      return grass;
+    }
+
+    @Override
+    public BiomeStructure buildFoliage() {
+      return foliage;
+    }
+
+    @Override
+    public BiomeStructure buildWater() {
+      return water;
+    }
   }
 
   static class Impl extends Position3d2ReferencePackedArrayStructure<float[]> implements BiomeStructure {
