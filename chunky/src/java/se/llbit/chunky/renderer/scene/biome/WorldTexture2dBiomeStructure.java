@@ -1,5 +1,7 @@
 package se.llbit.chunky.renderer.scene.biome;
 
+import se.llbit.chunky.world.ChunkPosition;
+import se.llbit.chunky.world.ChunkTexture;
 import se.llbit.chunky.world.WorldTexture;
 
 import java.io.DataInputStream;
@@ -12,6 +14,10 @@ public class WorldTexture2dBiomeStructure implements BiomeStructure.Factory {
   @Override
   public BiomeStructure create() {
     return new Impl(new WorldTexture());
+  }
+
+  public BiomeStructure.Loader createLoader() {
+    return new WorldTexture2dBiomeStructure.Loader();
   }
 
   @Override
@@ -37,6 +43,46 @@ public class WorldTexture2dBiomeStructure implements BiomeStructure.Factory {
   @Override
   public String getId() {
     return ID;
+  }
+
+  static class Loader extends BiomeLoader2d {
+    private final WorldTexture grass = new WorldTexture();
+    private final WorldTexture foliage = new WorldTexture();
+    private final WorldTexture water = new WorldTexture();
+
+    @Override
+    protected void setChunk(ChunkPosition cp, float[][][] chunkGrass, float[][][] chunkFoliage, float[][][] chunkWater) {
+      ChunkTexture grassTexture = new ChunkTexture();
+      ChunkTexture foliageTexture = new ChunkTexture();
+      ChunkTexture waterTexture = new ChunkTexture();
+
+      for (int x = 0; x < 16; x++) {
+        for (int z = 0; z < 16; z++) {
+          grassTexture.set(x, z, chunkGrass[x][z]);
+          foliageTexture.set(x, z, chunkFoliage[x][z]);
+          waterTexture.set(x, z, chunkWater[x][z]);
+        }
+      }
+
+      grass.setChunk(cp.x, cp.z, grassTexture);
+      foliage.setChunk(cp.x, cp.z, foliageTexture);
+      water.setChunk(cp.x, cp.z, waterTexture);
+    }
+
+    @Override
+    public BiomeStructure buildGrass() {
+      return new WorldTexture2dBiomeStructure.Impl(grass);
+    }
+
+    @Override
+    public BiomeStructure buildFoliage() {
+      return new WorldTexture2dBiomeStructure.Impl(foliage);
+    }
+
+    @Override
+    public BiomeStructure buildWater() {
+      return new WorldTexture2dBiomeStructure.Impl(water);
+    }
   }
 
   static class Impl implements BiomeStructure {
