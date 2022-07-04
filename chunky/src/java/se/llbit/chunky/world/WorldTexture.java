@@ -18,11 +18,14 @@ package se.llbit.chunky.world;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
+import java.util.WeakHashMap;
 
 /**
  * World texture.
@@ -32,13 +35,28 @@ import java.util.HashMap;
 public class WorldTexture {
 
   private final Long2ObjectOpenHashMap<ChunkTexture> map = new Long2ObjectOpenHashMap<>();
+  private WeakHashMap<ChunkTexture, WeakReference<ChunkTexture>> cache = new WeakHashMap<>();
 
-  private boolean compacted = false;
 
   /**
    * Timestamp of last serialization.
    */
   private long timestamp = 0;
+
+  /**
+   * Set the chunk texture at a chunk position
+   * @param cx  Chunk x coordinate
+   * @param cy  Chunk y coordinate
+   * @param ct  Chunk texture
+   */
+  public void setChunk(int cx, int cy, ChunkTexture ct) {
+    long cp = (long) cx << 32 | (cy & 0xffffffffL);
+    ChunkTexture cached = cache.computeIfAbsent(ct, WeakReference::new).get();
+    if (cached != null) {
+      ct = cached;
+    }
+    map.put(cp, ct);
+  }
 
   /**
    * Set color at (x, z)
@@ -49,17 +67,20 @@ public class WorldTexture {
   public void set(int x, int z, float[] frgb) {
     long cp = ((long) x >> 4) << 32 | ((z >> 4) & 0xffffffffL);
     ChunkTexture ct = map.get(cp);
-
-    // This chunk texture might be used in other places so we must create a copy
-    if (compacted) {
+    if (ct == null) {
+      ct = new ChunkTexture();
+    } else {
       ct = new ChunkTexture(ct);
     }
 
-    if (ct == null) {
-      ct = new ChunkTexture();
-      map.put(cp, ct);
-    }
     ct.set(x & 0xF, z & 0xF, frgb);
+
+    ChunkTexture cached = cache.computeIfAbsent(ct, WeakReference::new).get();
+    if (cached != null) {
+      ct = cached;
+    }
+
+    map.put(cp, ct);
   }
 
   /**
@@ -123,19 +144,8 @@ public class WorldTexture {
    * Deduplicate this {@code WorldTexture} to save memory. This also makes this read-only.
    */
   public void compact() {
-    if (compacted) return;
-    compacted = true;
-
-    HashMap<ChunkTexture, ChunkTexture> textureCache = new HashMap<>();
-    for (Long2ObjectMap.Entry<ChunkTexture> entry : map.long2ObjectEntrySet()) {
-      ChunkTexture tile = entry.getValue();
-
-      if (textureCache.containsKey(tile)) {
-        entry.setValue(textureCache.get(tile));
-      } else {
-        textureCache.put(tile, tile);
-      }
-    }
+    cache = null;
+    System.gc();
   }
 
   /**

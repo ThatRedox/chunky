@@ -2,8 +2,11 @@ package se.llbit.chunky.renderer.scene.biome;
 
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import se.llbit.chunky.world.Chunk;
+import se.llbit.chunky.world.ChunkPosition;
 import se.llbit.chunky.world.WorldTexture;
+import se.llbit.chunky.world.biome.BiomePalette;
 import se.llbit.log.Log;
+import se.llbit.math.Vector3i;
 import se.llbit.math.structures.Position2IntStructure;
 import se.llbit.math.structures.Position2ReferenceStructure;
 import se.llbit.math.structures.Position2d2IntPackedArray;
@@ -15,6 +18,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 public interface BiomeStructure extends Position2ReferenceStructure<float[]> {
   Map<String, Factory> REGISTRY = new Object2ReferenceOpenHashMap<>();
@@ -94,11 +98,38 @@ public interface BiomeStructure extends Position2ReferenceStructure<float[]> {
    */
   String biomeFormat();
 
+  interface Loader {
+    BiomeStructure buildGrass();
+    BiomeStructure buildFoliage();
+    BiomeStructure buildWater();
+
+    /**
+     * Load a chunk with biome blending.
+     */
+    void loadBlendedChunk(ChunkPosition cp, int yMin, int yMax, Vector3i origin, Set<ChunkPosition> nonEmptyChunks, BiomePalette biomePalette, Position2IntStructure biomePaletteIdxStructure);
+
+    /**
+     * Load a chunk without biome blending.
+     */
+    void loadRawChunk(ChunkPosition cp, int yMin, int yMax, Vector3i origin, BiomePalette biomePalette, Position2IntStructure biomePaletteIdxStructure);
+  }
+
   interface Factory extends Registerable {
     /**
      * Create an empty {@link BiomeStructure} for loading a new scene
      */
     BiomeStructure create();
+
+    /**
+     * Create a {@link BiomeStructure.Loader} for loadinga  new scene
+     */
+    default BiomeStructure.Loader createLoader() {
+      if (is3d()) {
+        return new TrivialBiomeLoader3d(create(), create(), create());
+      } else {
+        return new TrivialBiomeLoader2d(create(), create(), create());
+      }
+    }
 
     /**
      * Create an empty {@link Position2IntStructure} for the biome palette indices
