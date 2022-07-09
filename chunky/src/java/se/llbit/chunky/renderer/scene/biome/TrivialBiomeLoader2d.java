@@ -34,20 +34,15 @@ public class TrivialBiomeLoader2d extends BiomeLoader2d {
   }
 
   @Override
-  protected void setChunk(ChunkPosition cp, float[][][] chunkGrass, float[][][] chunkFoliage, float[][][] chunkWater) {
+  protected void setChunk(ChunkPosition cp, ChunkAccessor chunkGrass, ChunkAccessor chunkFoliage, ChunkAccessor chunkWater) {
     for (int x = 0; x < 16; x++) {
       for (int z = 0; z < 16; z++) {
         int wx = x + cp.x*16;
         int wz = z + cp.z*16;
 
-        float[] grassColor = Arrays.copyOf(chunkGrass[x][z], 3);
-        grass.set(wx, 0, wz, grassColor);
-
-        float[] foliageColor = Arrays.copyOf(chunkFoliage[x][z], 3);
-        foliage.set(wx, 0, wz, foliageColor);
-
-        float[] waterColor = Arrays.copyOf(chunkWater[x][z], 3);
-        water.set(wx, 0, wz, waterColor);
+        grass.set(wx, 0, wz, chunkGrass.get(x, z));
+        foliage.set(wx, 0, wz, chunkFoliage.get(x, z));
+        water.set(wx, 0, wz, chunkFoliage.get(x, z));
       }
     }
   }

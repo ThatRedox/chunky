@@ -51,16 +51,16 @@ public class WorldTexture2dBiomeStructure implements BiomeStructure.Factory {
     private final WorldTexture water = new WorldTexture();
 
     @Override
-    protected void setChunk(ChunkPosition cp, float[][][] chunkGrass, float[][][] chunkFoliage, float[][][] chunkWater) {
+    protected void setChunk(ChunkPosition cp, ChunkAccessor chunkGrass, ChunkAccessor chunkFoliage, ChunkAccessor chunkWater) {
       ChunkTexture grassTexture = new ChunkTexture();
       ChunkTexture foliageTexture = new ChunkTexture();
       ChunkTexture waterTexture = new ChunkTexture();
 
       for (int x = 0; x < 16; x++) {
         for (int z = 0; z < 16; z++) {
-          grassTexture.set(x, z, chunkGrass[x][z]);
-          foliageTexture.set(x, z, chunkFoliage[x][z]);
-          waterTexture.set(x, z, chunkWater[x][z]);
+          grassTexture.set(x, z, chunkGrass.get(x, z));
+          foliageTexture.set(x, z, chunkFoliage.get(x, z));
+          waterTexture.set(x, z, chunkWater.get(x, z));
         }
       }
 

@@ -35,7 +35,7 @@ public class TrivialBiomeLoader3d extends BiomeLoader3d {
   }
 
   @Override
-  protected void setChunk(int cx, int cy, int cz, Vector3i origin, float[][][][] chunkGrass, float[][][][] chunkFoliage, float[][][][] chunkWater) {
+  protected void setChunk(int cx, int cy, int cz, Vector3i origin, ChunkAccessor chunkGrass, ChunkAccessor chunkFoliage, ChunkAccessor chunkWater) {
     for (int x = 0; x < 16; x++) {
       for (int y = 0; y < 16; y++) {
         for (int z = 0; z < 16; z++) {
@@ -43,9 +43,9 @@ public class TrivialBiomeLoader3d extends BiomeLoader3d {
           int wy = (y + cy*16) - origin.y;
           int wz = (z + cz*16) - origin.z;
 
-          grass.set(wx, wy, wz, Arrays.copyOf(chunkGrass[x][y][z], 3));
-          foliage.set(wx, wy, wz, Arrays.copyOf(chunkFoliage[x][y][z], 3));
-          water.set(wx, wy, wz, Arrays.copyOf(chunkWater[x][y][z], 3));
+          grass.set(wx, wy, wz, Arrays.copyOf(chunkGrass.get(x, y, z), 3));
+          foliage.set(wx, wy, wz, Arrays.copyOf(chunkFoliage.get(x, y, z), 3));
+          water.set(wx, wy, wz, Arrays.copyOf(chunkWater.get(x, y, z), 3));
         }
       }
     }

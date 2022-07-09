@@ -24,24 +24,37 @@ import se.llbit.chunky.world.biome.BiomePalette;
 import se.llbit.math.Vector3i;
 import se.llbit.math.structures.Position2IntStructure;
 
+import java.util.Arrays;
 import java.util.Set;
 
 public abstract class BiomeLoader2d implements BiomeStructure.Loader {
-  private final float[][][] chunkGrass = new float[16][16][3];
-  private final float[][][] chunkFoliage = new float[16][16][3];
-  private final float[][][] chunkWater = new float[16][16][3];
+  private final float[][][] grassArray = new float[16][16][3];
+  private final float[][][] foliageArray = new float[16][16][3];
+  private final float[][][] waterArray = new float[16][16][3];
 
-// TODO Summed area table
-//  private final float[] sat = new float[18 * 18 * 3];
+  private final ChunkAccessor grassAccessor = new ChunkAccessor(grassArray);
+  private final ChunkAccessor foliageAccessor = new ChunkAccessor(foliageArray);
+  private final ChunkAccessor waterAccessor = new ChunkAccessor(waterArray);
+
+  protected static class ChunkAccessor {
+    float[][][] colors;
+
+    ChunkAccessor(float[][][] colors) {
+      this.colors = colors;
+    }
+
+    public float[] get(int x, int z) {
+      return Arrays.copyOf(colors[x][z], 3);
+    }
+  }
 
   /**
-   * Arrays are arranged such that {@code chunk[x position][z position] = {r, g, b}}
    * @param cp            Chunk position
-   * @param chunkGrass    Grass biome color array
-   * @param chunkFoliage  Foliage biome color array
-   * @param chunkWater    Water biome color array.
+   * @param chunkGrass    Grass biome color.
+   * @param chunkFoliage  Foliage biome color.
+   * @param chunkWater    Water biome color.
    */
-  protected abstract void setChunk(ChunkPosition cp, float[][][] chunkGrass, float[][][] chunkFoliage, float[][][] chunkWater);
+  protected abstract void setChunk(ChunkPosition cp, ChunkAccessor chunkGrass, ChunkAccessor chunkFoliage, ChunkAccessor chunkWater);
 
   @Override
   public abstract BiomeStructure buildGrass();
@@ -91,21 +104,21 @@ public abstract class BiomeLoader2d implements BiomeStructure.Loader {
         grassMix[0] /= nsum;
         grassMix[1] /= nsum;
         grassMix[2] /= nsum;
-        System.arraycopy(grassMix, 0, chunkGrass[x][z], 0, 3);
+        System.arraycopy(grassMix, 0, grassArray[x][z], 0, 3);
 
         foliageMix[0] /= nsum;
         foliageMix[1] /= nsum;
         foliageMix[2] /= nsum;
-        System.arraycopy(foliageMix, 0, chunkFoliage[x][z], 0, 3);
+        System.arraycopy(foliageMix, 0, foliageArray[x][z], 0, 3);
 
         waterMix[0] /= nsum;
         waterMix[1] /= nsum;
         waterMix[2] /= nsum;
-        System.arraycopy(waterMix, 0, chunkWater[x][z], 0, 3);
+        System.arraycopy(waterMix, 0, waterArray[x][z], 0, 3);
       }
     }
 
-    setChunk(cp, chunkGrass, chunkFoliage, chunkWater);
+    setChunk(cp, grassAccessor, foliageAccessor, waterAccessor);
   }
 
   @Override
@@ -116,12 +129,12 @@ public abstract class BiomeLoader2d implements BiomeStructure.Loader {
         int wz = z + cp.z*16;
         Biome biome = biomePalette.get(biomePaletteIdxStructure.get(wx, 0, wz));
 
-        System.arraycopy(biome.grassColorLinear, 0, chunkGrass[x][z], 0, 3);
-        System.arraycopy(biome.foliageColorLinear, 0, chunkFoliage[x][z], 0, 3);
-        System.arraycopy(biome.waterColorLinear, 0, chunkWater[x][z], 0, 3);
+        System.arraycopy(biome.grassColorLinear, 0, grassArray[x][z], 0, 3);
+        System.arraycopy(biome.foliageColorLinear, 0, foliageArray[x][z], 0, 3);
+        System.arraycopy(biome.waterColorLinear, 0, waterArray[x][z], 0, 3);
       }
     }
 
-    setChunk(cp, chunkGrass, chunkFoliage, chunkWater);
+    setChunk(cp, grassAccessor, foliageAccessor, waterAccessor);
   }
 }

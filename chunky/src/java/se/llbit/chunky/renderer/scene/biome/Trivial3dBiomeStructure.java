@@ -86,18 +86,18 @@ public class Trivial3dBiomeStructure implements BiomeStructure.Factory {
     Trivial3dBiomeStructure.Impl water = new Impl();
 
     @Override
-    protected void setChunk(int cx, int cy, int cz, Vector3i origin, float[][][][] chunkGrass, float[][][][] chunkFoliage, float[][][][] chunkWater) {
+    protected void setChunk(int cx, int cy, int cz, Vector3i origin, ChunkAccessor chunkGrass, ChunkAccessor chunkFoliage, ChunkAccessor chunkWater) {
       grass.setCube(cx, cy, cz, flatten(chunkGrass));
       foliage.setCube(cx, cy, cz, flatten(chunkFoliage));
       water.setCube(cx, cy, cz, flatten(chunkWater));
     }
 
-    private float[][] flatten(float[][][][] input) {
-      float[][] out = new float[16*16*16][3];
+    private float[][] flatten(ChunkAccessor accessor) {
+      float[][] out = new float[16*16*16][];
       for (int z = 0; z < 16; z++) {
         for (int y = 0; y < 16; y++) {
           for (int x = 0; x < 16; x++) {
-            System.arraycopy(input[x][y][z], 0, out[z*16*16 + y*16 + x], 0, 3);
+            out[z*16*16 + y*16 + x] = accessor.get(x, y, z);
           }
         }
       }
