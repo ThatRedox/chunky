@@ -19,6 +19,7 @@
 package se.llbit.chunky.renderer.scene.biome;
 
 import se.llbit.chunky.world.ChunkPosition;
+import se.llbit.math.Vector3i;
 
 import java.util.Arrays;
 
@@ -34,11 +35,11 @@ public class TrivialBiomeLoader2d extends BiomeLoader2d {
   }
 
   @Override
-  protected void setChunk(ChunkPosition cp, ChunkAccessor chunkGrass, ChunkAccessor chunkFoliage, ChunkAccessor chunkWater) {
+  protected void setChunk(ChunkPosition cp, Vector3i origin, ChunkAccessor chunkGrass, ChunkAccessor chunkFoliage, ChunkAccessor chunkWater) {
     for (int x = 0; x < 16; x++) {
       for (int z = 0; z < 16; z++) {
-        int wx = x + cp.x*16;
-        int wz = z + cp.z*16;
+        int wx = cp.x*16 + x - origin.x;
+        int wz = cp.z*16 + z - origin.z;
 
         grass.set(wx, 0, wz, chunkGrass.get(x, z));
         foliage.set(wx, 0, wz, chunkFoliage.get(x, z));

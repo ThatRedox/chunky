@@ -126,7 +126,7 @@ public abstract class BiomeLoader3d implements BiomeStructure.Loader {
         }
       }
 
-      setChunk(cp.x, sectionY << 4, cp.z, origin, grassAccessor, foliageAccessor, waterAccessor);
+      setChunk(cp.x, sectionY, cp.z, origin, grassAccessor, foliageAccessor, waterAccessor);
     }
   }
 

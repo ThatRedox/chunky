@@ -3,6 +3,7 @@ package se.llbit.chunky.renderer.scene.biome;
 import se.llbit.chunky.world.ChunkPosition;
 import se.llbit.chunky.world.ChunkTexture;
 import se.llbit.chunky.world.WorldTexture;
+import se.llbit.math.Vector3i;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -51,7 +52,7 @@ public class WorldTexture2dBiomeStructure implements BiomeStructure.Factory {
     private final WorldTexture water = new WorldTexture();
 
     @Override
-    protected void setChunk(ChunkPosition cp, ChunkAccessor chunkGrass, ChunkAccessor chunkFoliage, ChunkAccessor chunkWater) {
+    protected void setChunk(ChunkPosition cp, Vector3i origin, ChunkAccessor chunkGrass, ChunkAccessor chunkFoliage, ChunkAccessor chunkWater) {
       ChunkTexture grassTexture = new ChunkTexture();
       ChunkTexture foliageTexture = new ChunkTexture();
       ChunkTexture waterTexture = new ChunkTexture();
@@ -64,9 +65,15 @@ public class WorldTexture2dBiomeStructure implements BiomeStructure.Factory {
         }
       }
 
-      grass.setChunk(cp.x, cp.z, grassTexture);
-      foliage.setChunk(cp.x, cp.z, foliageTexture);
-      water.setChunk(cp.x, cp.z, waterTexture);
+      int wx = cp.x*16 - origin.x;
+      int wz = cp.z*16 - origin.z;
+
+      int cx = wx >> 4;
+      int cz = wz >> 4;
+
+      grass.setChunk(cx, cz, grassTexture);
+      foliage.setChunk(cx, cz, foliageTexture);
+      water.setChunk(cx, cz, waterTexture);
     }
 
     @Override

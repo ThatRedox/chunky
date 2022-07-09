@@ -39,9 +39,9 @@ public class TrivialBiomeLoader3d extends BiomeLoader3d {
     for (int x = 0; x < 16; x++) {
       for (int y = 0; y < 16; y++) {
         for (int z = 0; z < 16; z++) {
-          int wx = (x + cx*16) - origin.x;
-          int wy = (y + cy*16) - origin.y;
-          int wz = (z + cz*16) - origin.z;
+          int wx = cx*16 + x - origin.x;
+          int wy = cy*16 + y - origin.y;
+          int wz = cz*16 + z - origin.z;
 
           grass.set(wx, wy, wz, Arrays.copyOf(chunkGrass.get(x, y, z), 3));
           foliage.set(wx, wy, wz, Arrays.copyOf(chunkFoliage.get(x, y, z), 3));

@@ -49,12 +49,13 @@ public abstract class BiomeLoader2d implements BiomeStructure.Loader {
   }
 
   /**
-   * @param cp            Chunk position
+   * @param cp            Chunk position.
+   * @param origin        Scene origin.
    * @param chunkGrass    Grass biome color.
    * @param chunkFoliage  Foliage biome color.
    * @param chunkWater    Water biome color.
    */
-  protected abstract void setChunk(ChunkPosition cp, ChunkAccessor chunkGrass, ChunkAccessor chunkFoliage, ChunkAccessor chunkWater);
+  protected abstract void setChunk(ChunkPosition cp, Vector3i origin, ChunkAccessor chunkGrass, ChunkAccessor chunkFoliage, ChunkAccessor chunkWater);
 
   @Override
   public abstract BiomeStructure buildGrass();
@@ -118,7 +119,7 @@ public abstract class BiomeLoader2d implements BiomeStructure.Loader {
       }
     }
 
-    setChunk(cp, grassAccessor, foliageAccessor, waterAccessor);
+    setChunk(cp, origin, grassAccessor, foliageAccessor, waterAccessor);
   }
 
   @Override
@@ -135,6 +136,6 @@ public abstract class BiomeLoader2d implements BiomeStructure.Loader {
       }
     }
 
-    setChunk(cp, grassAccessor, foliageAccessor, waterAccessor);
+    setChunk(cp, origin, grassAccessor, foliageAccessor, waterAccessor);
   }
 }
