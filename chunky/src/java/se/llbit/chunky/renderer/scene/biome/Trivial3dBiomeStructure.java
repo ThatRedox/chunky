@@ -1,6 +1,7 @@
 package se.llbit.chunky.renderer.scene.biome;
 
 import it.unimi.dsi.fastutil.objects.Object2ReferenceMap;
+import se.llbit.chunky.world.ChunkTexture;
 import se.llbit.math.Vector3i;
 import se.llbit.math.structures.Position3d2ReferencePackedArrayStructure;
 import se.llbit.util.annotation.NotNull;
@@ -8,7 +9,9 @@ import se.llbit.util.annotation.NotNull;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.BitSet;
+import java.util.WeakHashMap;
 
 public class Trivial3dBiomeStructure implements BiomeStructure.Factory {
   private static final String ID = "TRIVIAL_3D";
@@ -16,6 +19,11 @@ public class Trivial3dBiomeStructure implements BiomeStructure.Factory {
   @Override
   public BiomeStructure create() {
     return new Impl();
+  }
+
+  @Override
+  public BiomeStructure.Loader createLoader() {
+    return new Trivial3dBiomeStructure.Loader();
   }
 
   @Override
@@ -87,6 +95,9 @@ public class Trivial3dBiomeStructure implements BiomeStructure.Factory {
 
     @Override
     protected void setChunk(int cx, int cy, int cz, Vector3i origin, ChunkAccessor chunkGrass, ChunkAccessor chunkFoliage, ChunkAccessor chunkWater) {
+      cx = (cx*16 - origin.x) >> 4;
+      cy = (cy*16 - origin.y) >> 4;
+      cz = (cz*16 - origin.z) >> 4;
       grass.setCube(cx, cy, cz, flatten(chunkGrass));
       foliage.setCube(cx, cy, cz, flatten(chunkFoliage));
       water.setCube(cx, cy, cz, flatten(chunkWater));

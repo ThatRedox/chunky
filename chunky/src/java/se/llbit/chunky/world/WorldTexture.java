@@ -144,7 +144,7 @@ public class WorldTexture {
    * Deduplicate this {@code WorldTexture} to save memory. This also makes this read-only.
    */
   public void compact() {
-    cache = null;
+    cache = new WeakHashMap<>();
     System.gc();
   }
 
