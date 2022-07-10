@@ -98,6 +98,13 @@ public interface BiomeStructure extends Position2ReferenceStructure<float[]> {
    */
   String biomeFormat();
 
+  /**
+   * @return Whether this implementation can be concurrently modified by multiple threads
+   */
+  default boolean isThreadSafe() {
+    return false;
+  }
+
   interface Loader {
     BiomeStructure buildGrass();
     BiomeStructure buildFoliage();
@@ -112,6 +119,13 @@ public interface BiomeStructure extends Position2ReferenceStructure<float[]> {
      * Load a chunk without biome blending.
      */
     void loadRawChunk(ChunkPosition cp, int yMin, int yMax, Vector3i origin, BiomePalette biomePalette, Position2IntStructure biomePaletteIdxStructure);
+
+    /**
+     * @return Whether this implementation can be concurrently modified by multiple threads
+     */
+    default boolean isThreadSafe() {
+      return false;
+    }
   }
 
   interface Factory extends Registerable {

@@ -51,6 +51,13 @@ public class WorldTexture2dBiomeStructure implements BiomeStructure.Factory {
     private final WorldTexture foliage = new WorldTexture();
     private final WorldTexture water = new WorldTexture();
 
+    private final Object textureLock = new Object();
+
+    @Override
+    public boolean isThreadSafe() {
+      return true;
+    }
+
     @Override
     protected void setChunk(ChunkPosition cp, Vector3i origin, ChunkAccessor chunkGrass, ChunkAccessor chunkFoliage, ChunkAccessor chunkWater) {
       ChunkTexture grassTexture = new ChunkTexture();
@@ -71,9 +78,11 @@ public class WorldTexture2dBiomeStructure implements BiomeStructure.Factory {
       int cx = wx >> 4;
       int cz = wz >> 4;
 
-      grass.setChunk(cx, cz, grassTexture);
-      foliage.setChunk(cx, cz, foliageTexture);
-      water.setChunk(cx, cz, waterTexture);
+      synchronized (textureLock) {
+        grass.setChunk(cx, cz, grassTexture);
+        foliage.setChunk(cx, cz, foliageTexture);
+        water.setChunk(cx, cz, waterTexture);
+      }
     }
 
     @Override

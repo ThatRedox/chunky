@@ -28,10 +28,19 @@ public class TrivialBiomeLoader3d extends BiomeLoader3d {
   protected final BiomeStructure foliage;
   protected final BiomeStructure water;
 
+  protected final Object grassLock = new Object();
+  protected final Object foliageLock = new Object();
+  protected final Object waterLock = new Object();
+
   public TrivialBiomeLoader3d(BiomeStructure grass, BiomeStructure foliage, BiomeStructure water) {
     this.grass = grass;
     this.foliage = foliage;
     this.water = water;
+  }
+
+  @Override
+  public boolean isThreadSafe() {
+    return true;
   }
 
   @Override
@@ -43,9 +52,29 @@ public class TrivialBiomeLoader3d extends BiomeLoader3d {
           int wy = cy*16 + y - origin.y;
           int wz = cz*16 + z - origin.z;
 
-          grass.set(wx, wy, wz, Arrays.copyOf(chunkGrass.get(x, y, z), 3));
-          foliage.set(wx, wy, wz, Arrays.copyOf(chunkFoliage.get(x, y, z), 3));
-          water.set(wx, wy, wz, Arrays.copyOf(chunkWater.get(x, y, z), 3));
+          if (grass.isThreadSafe()) {
+            grass.set(wx, wy, wz, Arrays.copyOf(chunkGrass.get(x, y, z), 3));
+          } else {
+            synchronized (grassLock) {
+              grass.set(wx, wy, wz, Arrays.copyOf(chunkGrass.get(x, y, z), 3));
+            }
+          }
+
+          if (water.isThreadSafe()) {
+            water.set(wx, wy, wz, Arrays.copyOf(chunkGrass.get(x, y, z), 3));
+          } else {
+            synchronized (waterLock) {
+              water.set(wx, wy, wz, Arrays.copyOf(chunkGrass.get(x, y, z), 3));
+            }
+          }
+
+          if (foliage.isThreadSafe()) {
+            foliage.set(wx, wy, wz, Arrays.copyOf(chunkGrass.get(x, y, z), 3));
+          } else {
+            synchronized (foliageLock) {
+              foliage.set(wx, wy, wz, Arrays.copyOf(chunkGrass.get(x, y, z), 3));
+            }
+          }
         }
       }
     }

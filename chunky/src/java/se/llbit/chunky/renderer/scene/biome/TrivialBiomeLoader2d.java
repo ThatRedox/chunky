@@ -28,10 +28,19 @@ public class TrivialBiomeLoader2d extends BiomeLoader2d {
   protected final BiomeStructure foliage;
   protected final BiomeStructure water;
 
+  protected final Object grassLock = new Object();
+  protected final Object foliageLock = new Object();
+  protected final Object waterLock = new Object();
+
   public TrivialBiomeLoader2d(BiomeStructure grass, BiomeStructure foliage, BiomeStructure water) {
     this.grass = grass;
     this.foliage = foliage;
     this.water = water;
+  }
+
+  @Override
+  public boolean isThreadSafe() {
+    return true;
   }
 
   @Override
@@ -41,9 +50,29 @@ public class TrivialBiomeLoader2d extends BiomeLoader2d {
         int wx = cp.x*16 + x - origin.x;
         int wz = cp.z*16 + z - origin.z;
 
-        grass.set(wx, 0, wz, chunkGrass.get(x, z));
-        foliage.set(wx, 0, wz, chunkFoliage.get(x, z));
-        water.set(wx, 0, wz, chunkFoliage.get(x, z));
+        if (grass.isThreadSafe()) {
+          grass.set(wx, 0, wz, chunkGrass.get(x, z));
+        } else {
+          synchronized (grassLock) {
+            grass.set(wx, 0, wz, chunkGrass.get(x, z));
+          }
+        }
+
+        if (water.isThreadSafe()) {
+          water.set(wx, 0, wz, chunkGrass.get(x, z));
+        } else {
+          synchronized (waterLock) {
+            water.set(wx, 0, wz, chunkGrass.get(x, z));
+          }
+        }
+
+        if (foliage.isThreadSafe()) {
+          foliage.set(wx, 0, wz, chunkGrass.get(x, z));
+        } else {
+          synchronized (foliageLock) {
+            foliage.set(wx, 0, wz, chunkGrass.get(x, z));
+          }
+        }
       }
     }
   }

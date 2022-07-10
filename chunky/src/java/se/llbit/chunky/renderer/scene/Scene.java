@@ -861,7 +861,7 @@ public class Scene implements JsonSerializable, Refreshable {
 
     BiomeStructure.Factory biomeStructureFactory = BiomeStructure.get(this.biomeStructureImplementation);
 
-    try (TaskTracker.Task task = taskTracker.task("(1/6) Loading regions")) {
+    try (TaskTracker.Task task = taskTracker.task("(1/7) Loading regions")) {
       task.update(2, 1);
 
       loadedWorld = world;
@@ -893,7 +893,7 @@ public class Scene implements JsonSerializable, Refreshable {
       }
     }
 
-    try (TaskTracker.Task task = taskTracker.task("(2/6) Loading entities")) {
+    try (TaskTracker.Task task = taskTracker.task("(2/7) Loading entities")) {
       entities.clear();
       if (actors.isEmpty() && PersistentSettings.getLoadPlayers()) {
         // We don't load actor entities if some already exists. Loading actor entities
@@ -942,7 +942,7 @@ public class Scene implements JsonSerializable, Refreshable {
     final Mutable<ChunkData> chunkData1 = new Mutable<>(null); // chunk loading will switch between these two, using one asynchronously to load the data
     final Mutable<ChunkData> chunkData2 = new Mutable<>(null); // while the other is used to add to the octree
 
-    try (TaskTracker.Task task = taskTracker.task("(3/6) Loading chunks")) {
+    try (TaskTracker.Task task = taskTracker.task("(3/7) Loading chunks")) {
       int done = 1;
       int target = chunksToLoad.size();
 
@@ -1330,21 +1330,16 @@ public class Scene implements JsonSerializable, Refreshable {
     actors.trimToSize();
     palette.unsynchronize();
 
-    try (TaskTracker.Task task = taskTracker.task("(4/6) Finalizing octree")) {
+    try (TaskTracker.Task task = taskTracker.task("(4/7) Finalizing octree")) {
 
       worldOctree.startFinalization();
       waterOctree.startFinalization();
 
-      BiomeStructure.Loader loader = biomeStructureFactory.createLoader();
+
 
       int done = 0;
       int target = nonEmptyChunks.size();
       for (ChunkPosition cp : nonEmptyChunks) {
-        if (biomeBlending) {
-          loader.loadBlendedChunk(cp, yMin, yMax, origin, nonEmptyChunks, biomePalette, biomePaletteIdxStructure);
-        } else {
-          loader.loadRawChunk(cp, yMin, yMax, origin, biomePalette, biomePaletteIdxStructure);
-        }
         task.updateEta(target, done);
         done += 1;
         OctreeFinalizer.finalizeChunk(worldOctree, waterOctree, palette, origin, cp, yMin, yMax);
@@ -1356,6 +1351,32 @@ public class Scene implements JsonSerializable, Refreshable {
 
       worldOctree.endFinalization();
       waterOctree.endFinalization();
+    }
+
+    try (TaskTracker.Task task = taskTracker.task("(5/7) Calculating Biome Colors")) {
+      BiomeStructure.Loader loader = biomeStructureFactory.createLoader();
+
+      AtomicInteger done = new AtomicInteger(0);
+      task.update(nonEmptyChunks.size(), 0);
+
+      Consumer<ChunkPosition> doLoad;
+      if (biomeBlending) {
+        doLoad = cp -> {
+          loader.loadBlendedChunk(cp, yMin, yMax, origin, nonEmptyChunks, biomePalette, biomePaletteIdxStructure);
+          task.updateEta(done.incrementAndGet());
+        };
+      } else {
+        doLoad = cp -> {
+          loader.loadRawChunk(cp, yMin, yMax, origin, biomePalette, biomePaletteIdxStructure);
+          task.updateEta(done.incrementAndGet());
+        };
+      }
+
+      if (loader.isThreadSafe()) {
+        Chunky.getCommonThreads().submit(() -> nonEmptyChunks.stream().parallel().forEach(doLoad)).join();
+      } else {
+        nonEmptyChunks.forEach(doLoad);
+      }
 
       grassTexture = loader.buildGrass();
       foliageTexture = loader.buildFoliage();
@@ -1379,10 +1400,10 @@ public class Scene implements JsonSerializable, Refreshable {
 
     chunks = loadedChunks;
     camera.setWorldSize(1 << worldOctree.getDepth());
-    try (TaskTracker.Task task = taskTracker.task("(5/6) Building world BVH")) {
+    try (TaskTracker.Task task = taskTracker.task("(6/7) Building world BVH")) {
       buildBvh(task);
     }
-    try (TaskTracker.Task task = taskTracker.task("(6/6) Building actor BVH")) {
+    try (TaskTracker.Task task = taskTracker.task("(7/7) Building actor BVH")) {
       buildActorBvh(task);
     }
     Log.info(String.format("Loaded %d chunks", numChunks));

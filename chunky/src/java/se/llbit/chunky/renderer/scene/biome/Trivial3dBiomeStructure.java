@@ -93,14 +93,23 @@ public class Trivial3dBiomeStructure implements BiomeStructure.Factory {
     Trivial3dBiomeStructure.Impl foliage = new Impl();
     Trivial3dBiomeStructure.Impl water = new Impl();
 
+    private final Object textureLock = new Object();
+
+    @Override
+    public boolean isThreadSafe() {
+      return true;
+    }
+
     @Override
     protected void setChunk(int cx, int cy, int cz, Vector3i origin, ChunkAccessor chunkGrass, ChunkAccessor chunkFoliage, ChunkAccessor chunkWater) {
       cx = (cx*16 - origin.x) >> 4;
       cy = (cy*16 - origin.y) >> 4;
       cz = (cz*16 - origin.z) >> 4;
-      grass.setCube(cx, cy, cz, flatten(chunkGrass));
-      foliage.setCube(cx, cy, cz, flatten(chunkFoliage));
-      water.setCube(cx, cy, cz, flatten(chunkWater));
+      synchronized (textureLock) {
+        grass.setCube(cx, cy, cz, flatten(chunkGrass));
+        foliage.setCube(cx, cy, cz, flatten(chunkFoliage));
+        water.setCube(cx, cy, cz, flatten(chunkWater));
+      }
     }
 
     private float[][] flatten(ChunkAccessor accessor) {
