@@ -41,6 +41,7 @@ import se.llbit.resources.ImageLoader;
 import se.llbit.util.JsonSerializable;
 import se.llbit.util.JsonUtil;
 import se.llbit.util.annotation.NotNull;
+import se.llbit.util.annotation.Nullable;
 
 import java.io.File;
 import java.util.*;
@@ -194,18 +195,36 @@ public class Sky implements JsonSerializable {
   /**
    * Load the configured skymap file
    */
+  @Deprecated
   public void loadSkymap() {
+    loadSkymap((File) null);
+  }
+
+  /**
+   * Load a panoramic skymap texture.
+   */
+  @Deprecated
+  public void loadSkymap(String fileName) {
+    loadSkymap(fileName, null);
+  }
+
+  @Deprecated
+  public void loadSkyboxTexture(String fileName, int index) {
+    loadSkyboxTexture(fileName, index, null);
+  }
+
+  public void loadSkymap(@Nullable File sceneRoot) {
     switch (mode) {
       case SKYMAP_PANORAMIC:
       case SKYMAP_SPHERICAL:
         if (!skymapFileName.isEmpty()) {
-          loadSkymap(skymapFileName);
+          loadSkymap(skymapFileName, sceneRoot);
         }
         break;
       case SKYBOX:
         for (int i = 0; i < 6; ++i) {
           if (!skyboxFileName[i].isEmpty()) {
-            loadSkyboxTexture(skyboxFileName[i], i);
+            loadSkyboxTexture(skyboxFileName[i], i, sceneRoot);
           }
         }
       default:
@@ -216,9 +235,18 @@ public class Sky implements JsonSerializable {
   /**
    * Load a panoramic skymap texture.
    */
-  public void loadSkymap(String fileName) {
+  public void loadSkymap(String fileName, @Nullable File sceneRoot) {
     skymapFileName = fileName;
-    skymap = loadSkyTexture(fileName, skymap);
+    skymap = loadSkyTexture(fileName, skymap, sceneRoot);
+    scene.refresh();
+  }
+
+  public void loadSkyboxTexture(String fileName, int index, @Nullable File sceneRoot) {
+    if (index < 0 || index >= 6) {
+      throw new IllegalArgumentException();
+    }
+    skyboxFileName[index] = fileName;
+    skybox[index] = loadSkyTexture(fileName, skybox[index], sceneRoot);
     scene.refresh();
   }
 
@@ -768,17 +796,13 @@ public class Sky implements JsonSerializable {
     gradient.add(new Vector4(0x75 / 255., 0xAA / 255., 0xFF / 255., 1));
   }
 
-  public void loadSkyboxTexture(String fileName, int index) {
-    if (index < 0 || index >= 6) {
-      throw new IllegalArgumentException();
-    }
-    skyboxFileName[index] = fileName;
-    skybox[index] = loadSkyTexture(fileName, skybox[index]);
-    scene.refresh();
-  }
-
-  private Texture loadSkyTexture(String fileName, Texture prevTexture) {
+  private Texture loadSkyTexture(String fileName, Texture prevTexture, @Nullable File sceneRoot) {
     File textureFile = new File(fileName);
+    if (!textureFile.isAbsolute() && sceneRoot != null) {
+      textureFile = sceneRoot.toPath()
+        .resolve(textureFile.getPath())
+        .toFile();
+    }
     if (textureFile.exists()) {
       try {
         Log.info("Loading skymap: " + fileName);
