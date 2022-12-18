@@ -4,7 +4,7 @@ import se.llbit.chunky.plugin.PluginApi;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.resources.AnimatedTexture;
 import se.llbit.math.Quad;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector3;
 import se.llbit.util.MinecraftPRNG;
 

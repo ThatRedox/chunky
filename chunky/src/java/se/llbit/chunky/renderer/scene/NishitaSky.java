@@ -18,7 +18,7 @@ package se.llbit.chunky.renderer.scene;
 
 import org.apache.commons.math3.util.FastMath;
 import se.llbit.math.QuickMath;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector3;
 
 import static java.lang.Math.PI;

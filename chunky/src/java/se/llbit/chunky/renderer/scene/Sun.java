@@ -25,7 +25,7 @@ import se.llbit.chunky.renderer.Refreshable;
 import se.llbit.chunky.resources.Texture;
 import se.llbit.json.JsonObject;
 import se.llbit.math.QuickMath;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector3;
 import se.llbit.util.JsonSerializable;
 

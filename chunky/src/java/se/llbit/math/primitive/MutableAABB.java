@@ -16,9 +16,10 @@
  */
 package se.llbit.math.primitive;
 
-import se.llbit.math.AABB;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.IntersectionRecord;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector3;
+import se.llbit.util.annotation.Nullable;
 
 /**
  * Axis-Aligned Bounding Box. Does not compute intersection normals.
@@ -26,12 +27,12 @@ import se.llbit.math.Vector3;
  * @author Jesper Öqvist <jesper@llbit.se>
  */
 public class MutableAABB implements Primitive {
-  protected double xmin;
-  protected double xmax;
-  protected double ymin;
-  protected double ymax;
-  protected double zmin;
-  protected double zmax;
+  public double xmin;
+  public double xmax;
+  public double ymin;
+  public double ymax;
+  public double zmin;
+  public double zmax;
 
   /**
    * Construct a new AABB with given bounds.
@@ -46,172 +47,25 @@ public class MutableAABB implements Primitive {
   }
 
   /**
-   * Test if a ray intersects this AABB
-   *
-   * @return {@code true} if there is an intersection
-   */
-  public boolean hitTest(Ray ray) {
-    double t1, t2;
-    double tNear = Double.NEGATIVE_INFINITY;
-    double tFar = Double.POSITIVE_INFINITY;
-    Vector3 d = ray.d;
-    Vector3 o = ray.o;
-
-    if (d.x != 0) {
-      double rx = 1 / d.x;
-      t1 = (xmin - o.x) * rx;
-      t2 = (xmax - o.x) * rx;
-
-      if (t1 > t2) {
-        double t = t1;
-        t1 = t2;
-        t2 = t;
-      }
-
-      tNear = t1;
-      tFar = t2;
-    }
-
-    if (d.y != 0) {
-      double ry = 1 / d.y;
-      t1 = (ymin - o.y) * ry;
-      t2 = (ymax - o.y) * ry;
-
-      if (t1 > t2) {
-        double t = t1;
-        t1 = t2;
-        t2 = t;
-      }
-
-      if (t1 > tNear) {
-        tNear = t1;
-      }
-      if (t2 < tFar) {
-        tFar = t2;
-      }
-    }
-
-    if (d.z != 0) {
-      double rz = 1 / d.z;
-      t1 = (zmin - o.z) * rz;
-      t2 = (zmax - o.z) * rz;
-
-      if (t1 > t2) {
-        double t = t1;
-        t1 = t2;
-        t2 = t;
-      }
-
-      if (t1 > tNear) {
-        tNear = t1;
-      }
-      if (t2 < tFar) {
-        tFar = t2;
-      }
-    }
-
-    return tNear < tFar + Ray.EPSILON && tFar > 0;
-  }
-
-  @Override public boolean intersect(Ray ray) {
-    double t1, t2;
-    double tNear = Double.NEGATIVE_INFINITY;
-    double tFar = Double.POSITIVE_INFINITY;
-    Vector3 d = ray.d;
-    Vector3 o = ray.o;
-
-    if (d.x != 0) {
-      double rx = 1 / d.x;
-      t1 = (xmin - o.x) * rx;
-      t2 = (xmax - o.x) * rx;
-
-      if (t1 > t2) {
-        double t = t1;
-        t1 = t2;
-        t2 = t;
-      }
-
-      tNear = t1;
-      tFar = t2;
-    }
-
-    if (d.y != 0) {
-      double ry = 1 / d.y;
-      t1 = (ymin - o.y) * ry;
-      t2 = (ymax - o.y) * ry;
-
-      if (t1 > t2) {
-        double t = t1;
-        t1 = t2;
-        t2 = t;
-      }
-
-      if (t1 > tNear) {
-        tNear = t1;
-      }
-      if (t2 < tFar) {
-        tFar = t2;
-      }
-    }
-
-    if (d.z != 0) {
-      double rz = 1 / d.z;
-      t1 = (zmin - o.z) * rz;
-      t2 = (zmax - o.z) * rz;
-
-      if (t1 > t2) {
-        double t = t1;
-        t1 = t2;
-        t2 = t;
-      }
-
-      if (t1 > tNear) {
-        tNear = t1;
-      }
-      if (t2 < tFar) {
-        tFar = t2;
-      }
-    }
-
-    if (tNear < tFar + Ray.EPSILON && tNear >= 0 && tNear < ray.t) {
-      ray.tNext = tNear;
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  /**
    * Expand this AABB to enclose the given AABB.
    */
   public void expand(AABB p) {
-    if (p.xmin < xmin) {
-      xmin = p.xmin;
-    }
-    if (p.xmax > xmax) {
-      xmax = p.xmax;
-    }
-    if (p.ymin < ymin) {
-      ymin = p.ymin;
-    }
-    if (p.ymax > ymax) {
-      ymax = p.ymax;
-    }
-    if (p.zmin < zmin) {
-      zmin = p.zmin;
-    }
-    if (p.zmax > zmax) {
-      zmax = p.zmax;
-    }
+    xmin = Math.max(p.xmin, xmin);
+    ymin = Math.max(p.ymin, ymin);
+    zmin = Math.max(p.zmin, zmin);
+    xmax = Math.max(p.xmax, xmax);
+    ymax = Math.max(p.ymax, ymax);
+    zmax = Math.max(p.zmax, zmax);
   }
 
-  @Override public AABB bounds() {
+  @Override
+  public AABB bounds() {
     return new AABB(xmin, xmax, ymin, ymax, zmin, zmax);
   }
 
-  @Override public String toString() {
-    return String
-        .format("[ %.2f, %.2f, %.2f, %.2f, %.2f, %.2f]", xmin, xmax, ymin, ymax, zmin, zmax);
+  @Override
+  public String toString() {
+    return String.format("[ %.2f, %.2f, %.2f, %.2f, %.2f, %.2f]", xmin, xmax, ymin, ymax, zmin, zmax);
   }
 
   /**
@@ -236,4 +90,10 @@ public class MutableAABB implements Primitive {
     return 2 * (y * z + x * z + x * y);
   }
 
+  @Nullable
+  @Override
+  public IntersectionRecord closestIntersection(Ray ray, double limit) {
+    // TODO: This dosen't seem to be used?
+    return bounds().closestIntersection(ray, limit);
+  }
 }

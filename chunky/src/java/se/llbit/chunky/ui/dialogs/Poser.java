@@ -41,7 +41,7 @@ import se.llbit.math.bvh.BVH;
 import se.llbit.math.ColorUtil;
 import se.llbit.math.Matrix3;
 import se.llbit.math.QuickMath;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector3;
 
 import java.io.File;

@@ -6,7 +6,7 @@ import se.llbit.chunky.entity.SkullEntity;
 import se.llbit.chunky.entity.SkullEntity.Kind;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.resources.EntityTexture;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector3;
 import se.llbit.nbt.CompoundTag;
 

@@ -21,12 +21,13 @@ import java.util.Collection;
 import se.llbit.chunky.resources.Texture;
 import se.llbit.chunky.world.Material;
 import se.llbit.chunky.world.material.TextureMaterial;
-import se.llbit.math.AABB;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.IntersectionRecord;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Transform;
 import se.llbit.math.Vector2;
 import se.llbit.math.Vector3;
 import se.llbit.math.Vector4;
+import se.llbit.util.annotation.Nullable;
 
 /**
  * Box primitive.
@@ -89,64 +90,66 @@ public class Box implements Primitive {
     Material material = new TextureMaterial(texture);
     primitives.add(
         new TexturedTriangle(c000, c100, c010, new Vector2(uv.y, uv.z), new Vector2(uv.x, uv.z),
-            new Vector2(uv.y, uv.w), material));
+            new Vector2(uv.y, uv.w), false, material));
     primitives.add(
         new TexturedTriangle(c100, c110, c010, new Vector2(uv.x, uv.z), new Vector2(uv.x, uv.w),
-            new Vector2(uv.y, uv.w), material));
+            new Vector2(uv.y, uv.w), false, material));
   }
 
   public void addBackFaces(Collection<Primitive> primitives, Texture texture, Vector4 uv) {
     Material material = new TextureMaterial(texture);
     primitives.add(
         new TexturedTriangle(c101, c001, c111, new Vector2(uv.x, uv.z), new Vector2(uv.y, uv.z),
-            new Vector2(uv.x, uv.w), material));
+            new Vector2(uv.x, uv.w), false, material));
     primitives.add(
         new TexturedTriangle(c001, c011, c111, new Vector2(uv.y, uv.z), new Vector2(uv.y, uv.w),
-            new Vector2(uv.x, uv.w), material));
+            new Vector2(uv.x, uv.w), false, material));
   }
 
   public void addLeftFaces(Collection<Primitive> primitives, Texture texture, Vector4 uv) {
     Material material = new TextureMaterial(texture);
     primitives.add(
         new TexturedTriangle(c001, c000, c011, new Vector2(uv.y, uv.z), new Vector2(uv.x, uv.z),
-            new Vector2(uv.y, uv.w), material));
+            new Vector2(uv.y, uv.w), false, material));
     primitives.add(
         new TexturedTriangle(c000, c010, c011, new Vector2(uv.x, uv.z), new Vector2(uv.x, uv.w),
-            new Vector2(uv.y, uv.w), material));
+            new Vector2(uv.y, uv.w), false, material));
   }
 
   public void addRightFaces(Collection<Primitive> primitives, Texture texture, Vector4 uv) {
     Material material = new TextureMaterial(texture);
     primitives.add(
         new TexturedTriangle(c100, c101, c110, new Vector2(uv.y, uv.z), new Vector2(uv.x, uv.z),
-            new Vector2(uv.y, uv.w), material));
+            new Vector2(uv.y, uv.w), false, material));
     primitives.add(
         new TexturedTriangle(c101, c111, c110, new Vector2(uv.x, uv.z), new Vector2(uv.x, uv.w),
-            new Vector2(uv.y, uv.w), material));
+            new Vector2(uv.y, uv.w), false, material));
   }
 
   public void addTopFaces(Collection<Primitive> primitives, Texture texture, Vector4 uv) {
     Material material = new TextureMaterial(texture);
     primitives.add(
         new TexturedTriangle(c011, c110, c111, new Vector2(uv.y, uv.w), new Vector2(uv.x, uv.z),
-            new Vector2(uv.x, uv.w), material));
+            new Vector2(uv.x, uv.w), false, material));
     primitives.add(
         new TexturedTriangle(c011, c010, c110, new Vector2(uv.y, uv.w), new Vector2(uv.y, uv.z),
-            new Vector2(uv.x, uv.z), material));
+            new Vector2(uv.x, uv.z), false, material));
   }
 
   public void addBottomFaces(Collection<Primitive> primitives, Texture texture, Vector4 uv) {
     Material material = new TextureMaterial(texture);
     primitives.add(
         new TexturedTriangle(c000, c001, c100, new Vector2(uv.x, uv.z), new Vector2(uv.x, uv.w),
-            new Vector2(uv.y, uv.z), material));
+            new Vector2(uv.y, uv.z), false, material));
     primitives.add(
         new TexturedTriangle(c001, c101, c100, new Vector2(uv.x, uv.w), new Vector2(uv.y, uv.w),
-            new Vector2(uv.y, uv.z), material));
+            new Vector2(uv.y, uv.z), false, material));
   }
 
-  @Override public boolean intersect(Ray ray) {
-    // TODO Auto-generated method stub
-    return false;
+  @Nullable
+  @Override
+  public IntersectionRecord closestIntersection(Ray ray, double limit) {
+    // TODO: This is never used.
+    return null;
   }
 }

@@ -36,6 +36,7 @@ import se.llbit.chunky.plugin.PluginApi;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.world.Material;
 import se.llbit.log.Log;
+import se.llbit.math.rt.Ray;
 
 /**
  * A simple voxel Octree.

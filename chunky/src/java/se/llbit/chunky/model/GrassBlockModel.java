@@ -4,7 +4,7 @@ import static se.llbit.chunky.model.Tint.BIOME_GRASS;
 import static se.llbit.chunky.model.Tint.NONE;
 
 import se.llbit.chunky.resources.Texture;
-import se.llbit.math.AABB;
+import se.llbit.math.primitive.AABB;
 
 public class GrassBlockModel extends AABBModel {
 

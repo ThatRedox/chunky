@@ -2,6 +2,7 @@ package se.llbit.chunky.model;
 
 import se.llbit.chunky.resources.Texture;
 import se.llbit.math.*;
+import se.llbit.math.rt.Ray;
 
 public class SlimeBlockModel {
     private static final Quad[] quads = {

@@ -8,7 +8,7 @@ import se.llbit.chunky.resources.Texture;
 import se.llbit.chunky.world.BlockData;
 import se.llbit.json.JsonArray;
 import se.llbit.json.JsonObject;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector3;
 import se.llbit.nbt.CompoundTag;
 import se.llbit.nbt.ListTag;

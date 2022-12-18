@@ -3,7 +3,7 @@ package se.llbit.chunky.model;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.log.Log;
 import se.llbit.math.ColorUtil;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector4;
 
 public class Tint {

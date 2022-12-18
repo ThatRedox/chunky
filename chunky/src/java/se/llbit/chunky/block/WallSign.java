@@ -4,8 +4,7 @@ import se.llbit.chunky.entity.Entity;
 import se.llbit.chunky.entity.SignEntity;
 import se.llbit.chunky.entity.WallSignEntity;
 import se.llbit.chunky.renderer.scene.Scene;
-import se.llbit.chunky.resources.Texture;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector3;
 import se.llbit.nbt.CompoundTag;
 

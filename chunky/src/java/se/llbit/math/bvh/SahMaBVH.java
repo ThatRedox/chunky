@@ -20,7 +20,7 @@ package se.llbit.math.bvh;
 import se.llbit.chunky.entity.Entity;
 import se.llbit.chunky.main.Chunky;
 import se.llbit.log.Log;
-import se.llbit.math.AABB;
+import se.llbit.math.primitive.AABB;
 import se.llbit.math.Vector3;
 import se.llbit.math.primitive.MutableAABB;
 import se.llbit.math.primitive.Primitive;

@@ -17,7 +17,7 @@
 package se.llbit.chunky.model;
 
 import se.llbit.chunky.resources.Texture;
-import se.llbit.math.AABB;
+import se.llbit.math.primitive.AABB;
 
 public class EnchantmentTableModel extends AABBModel {
   private static final AABB[] aabbs = new AABB[]{ new AABB(0, 1, 0, .75, 0, 1) };

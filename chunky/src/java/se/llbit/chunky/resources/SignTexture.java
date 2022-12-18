@@ -20,9 +20,7 @@ import se.llbit.chunky.entity.SignEntity.Color;
 import se.llbit.chunky.resources.texturepack.FontTexture.Glyph;
 import se.llbit.json.JsonArray;
 import se.llbit.json.JsonValue;
-import se.llbit.math.ColorUtil;
-import se.llbit.math.Ray;
-import se.llbit.math.Vector4;
+import se.llbit.math.rt.Ray;
 
 public class SignTexture extends Texture {
 

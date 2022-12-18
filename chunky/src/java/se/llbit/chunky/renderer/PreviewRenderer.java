@@ -20,7 +20,7 @@ package se.llbit.chunky.renderer;
 import se.llbit.chunky.renderer.scene.Camera;
 import se.llbit.chunky.renderer.scene.RayTracer;
 import se.llbit.chunky.renderer.scene.Scene;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.util.TaskTracker;
 
 public class PreviewRenderer extends TileBasedRenderer {

@@ -16,7 +16,7 @@
  */
 package se.llbit.chunky.renderer;
 
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector4;
 
 import java.util.Random;

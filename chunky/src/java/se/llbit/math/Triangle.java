@@ -16,6 +16,8 @@
  */
 package se.llbit.math;
 
+import se.llbit.math.rt.Ray;
+
 /**
  * A class to test intersection against a three-dimensional,
  * non-degenerate triangle.

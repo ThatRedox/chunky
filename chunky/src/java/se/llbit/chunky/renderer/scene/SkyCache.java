@@ -25,7 +25,7 @@ import se.llbit.chunky.main.Chunky;
 import se.llbit.log.Log;
 import se.llbit.math.ColorUtil;
 import se.llbit.math.QuickMath;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector3;
 
 /**

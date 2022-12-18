@@ -19,7 +19,7 @@ package se.llbit.chunky.world.material;
 import se.llbit.chunky.resources.Texture;
 import se.llbit.chunky.world.Material;
 import se.llbit.math.ColorUtil;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 
 public class LilyPadMaterial extends Material {
 

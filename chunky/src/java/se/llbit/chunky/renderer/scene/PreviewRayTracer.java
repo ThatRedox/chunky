@@ -21,7 +21,7 @@ import se.llbit.chunky.block.Air;
 import se.llbit.chunky.block.MinecraftBlock;
 import se.llbit.chunky.block.Water;
 import se.llbit.chunky.renderer.WorkerState;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector3;
 import se.llbit.math.Vector4;
 

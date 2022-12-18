@@ -51,7 +51,7 @@ import se.llbit.chunky.world.listeners.ChunkUpdateListener;
 import se.llbit.chunky.world.region.MCRegion;
 import se.llbit.log.Log;
 import se.llbit.math.QuickMath;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector2;
 import se.llbit.math.Vector3;
 

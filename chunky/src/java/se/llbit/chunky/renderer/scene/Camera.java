@@ -41,7 +41,7 @@ import se.llbit.json.JsonObject;
 import se.llbit.log.Log;
 import se.llbit.math.Matrix3;
 import se.llbit.math.QuickMath;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector2;
 import se.llbit.math.Vector3;
 import se.llbit.util.JsonSerializable;

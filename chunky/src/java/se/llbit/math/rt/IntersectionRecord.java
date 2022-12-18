@@ -1,4 +1,5 @@
-/* Copyright (c) 2021 Chunky contributors
+/*
+ * Copyright (c) 2022 Chunky contributors
  *
  * This file is part of Chunky.
  *
@@ -14,32 +15,30 @@
  * You should have received a copy of the GNU General Public License
  * along with Chunky.  If not, see <http://www.gnu.org/licenses/>.
  */
-package se.llbit.chunky.renderer.scene;
 
-import se.llbit.math.rt.Ray;
+package se.llbit.math.rt;
+
+import se.llbit.chunky.world.Material;
+import se.llbit.math.Vector2;
 import se.llbit.math.Vector3;
 
-/**
- * Interface for simulated skies.
- */
-public interface SimulatedSky {
-  /**
-   * Update the sun if necessary. Returns true if the sun was updated (and cache needs to be purged).
-   */
-  boolean updateSun(Sun sun, double horizonOffset);
+public class IntersectionRecord {
+  public double distance;
+  public Material material;
 
-  /**
-   * Calculate the sky color for a given ray.
-   */
-  Vector3 calcIncidentLight(Ray ray);
+  public final Vector3 normal;
+  public final Vector2 texcoord;
 
-  /**
-   * Get the friendly name.
-   */
-  String getName();
+  public IntersectionRecord(double distance, Material material) {
+    this.distance = distance;
+    this.material = material;
+    this.normal = new Vector3();
+    this.texcoord = new Vector2();
+  }
 
-  /**
-   * Get the sky renderer tooltip.
-   */
-  String getDescription();
+  public IntersectionRecord(double distance, Material material, Vector3 normal, double u, double v) {
+    this(distance, material);
+    this.normal.set(normal);
+    this.texcoord.set(u, v);
+  }
 }

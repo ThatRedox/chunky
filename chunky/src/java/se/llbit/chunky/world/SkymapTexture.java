@@ -23,7 +23,7 @@ import se.llbit.chunky.resources.Texture;
 import se.llbit.log.Log;
 import se.llbit.math.ColorUtil;
 import se.llbit.math.QuickMath;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector4;
 import se.llbit.util.ImageTools;
 

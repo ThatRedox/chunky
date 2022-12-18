@@ -3,12 +3,10 @@ package se.llbit.chunky.model;
 import se.llbit.chunky.plugin.PluginApi;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.resources.Texture;
-import se.llbit.math.AABB;
-import se.llbit.math.Ray;
+import se.llbit.math.primitive.AABB;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector3;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 /**

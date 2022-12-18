@@ -20,7 +20,7 @@ import se.llbit.chunky.resources.Texture;
 import se.llbit.json.JsonObject;
 import se.llbit.json.JsonString;
 import se.llbit.json.JsonValue;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 
 public abstract class Material {
 

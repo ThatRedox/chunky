@@ -25,7 +25,7 @@ import se.llbit.chunky.resources.texturepack.TexturePath;
 import se.llbit.fxutil.FxImageUtil;
 import se.llbit.math.ColorUtil;
 import se.llbit.math.QuickMath;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector4;
 import se.llbit.resources.ImageLoader;
 import se.llbit.util.annotation.NotNull;

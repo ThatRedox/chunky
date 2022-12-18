@@ -5,7 +5,7 @@ import se.llbit.chunky.block.BlockSpec;
 import se.llbit.chunky.block.FinalizationState;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.log.Log;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.nbt.CompoundTag;
 
 /**

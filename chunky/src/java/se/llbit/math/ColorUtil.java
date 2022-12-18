@@ -21,6 +21,7 @@ import javafx.scene.paint.Color;
 import org.apache.commons.math3.util.FastMath;
 
 import se.llbit.chunky.renderer.scene.Scene;
+import se.llbit.math.rt.Ray;
 
 /**
  * Collection of utility methods for converting between different color representations.

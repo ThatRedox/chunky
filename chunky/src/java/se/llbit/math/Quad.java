@@ -22,6 +22,7 @@ import java.util.Random;
 import se.llbit.chunky.world.Material;
 import se.llbit.math.primitive.Primitive;
 import se.llbit.math.primitive.TexturedTriangle;
+import se.llbit.math.rt.Ray;
 
 /**
  * A quad.

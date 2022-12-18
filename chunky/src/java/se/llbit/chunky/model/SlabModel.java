@@ -1,7 +1,7 @@
 package se.llbit.chunky.model;
 
 import se.llbit.chunky.resources.Texture;
-import se.llbit.math.AABB;
+import se.llbit.math.primitive.AABB;
 
 public class SlabModel extends AABBModel {
   private final static AABB[] lower = { new AABB(0, 1, 0, .5, 0, 1) };

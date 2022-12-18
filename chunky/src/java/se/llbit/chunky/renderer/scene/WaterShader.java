@@ -17,7 +17,7 @@
 package se.llbit.chunky.renderer.scene;
 
 import se.llbit.json.JsonObject;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 
 public interface WaterShader {
   void doWaterShading(Ray ray, double animationTime);

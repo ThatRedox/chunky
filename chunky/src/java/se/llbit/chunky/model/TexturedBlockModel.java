@@ -18,9 +18,9 @@ package se.llbit.chunky.model;
 
 import se.llbit.chunky.block.Air;
 import se.llbit.chunky.resources.Texture;
-import se.llbit.math.AABB;
+import se.llbit.math.primitive.AABB;
 import se.llbit.math.QuickMath;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector3;
 
 /**

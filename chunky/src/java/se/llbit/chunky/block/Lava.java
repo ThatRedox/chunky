@@ -3,6 +3,8 @@ package se.llbit.chunky.block;
 import se.llbit.chunky.renderer.scene.Scene;
 import se.llbit.chunky.resources.Texture;
 import se.llbit.math.*;
+import se.llbit.math.primitive.AABB;
+import se.llbit.math.rt.Ray;
 
 import static se.llbit.chunky.block.Water.CORNER_0;
 import static se.llbit.chunky.block.Water.CORNER_1;

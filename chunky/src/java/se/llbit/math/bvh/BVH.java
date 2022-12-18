@@ -20,10 +20,12 @@ package se.llbit.math.bvh;
 import se.llbit.chunky.entity.Entity;
 import se.llbit.chunky.plugin.PluginApi;
 import se.llbit.log.Log;
-import se.llbit.math.Intersectable;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Intersectable;
+import se.llbit.math.rt.IntersectionRecord;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Vector3;
 import se.llbit.util.TaskTracker;
+import se.llbit.util.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -33,15 +35,14 @@ import java.util.Map;
  * Bounding Volume Hierarchy based on AABBs.
  */
 public interface BVH extends Intersectable {
-  BVH EMPTY = ray -> false;
+  BVH EMPTY = (ray, limit) -> null;
 
   /**
-   * Find closest intersection between the ray and any object in the BVH
-   *
-   * @return {@code true} if there exists any intersection
+   * Find the closest intersection between the ray and any object in the BVH
    */
+  @Nullable
   @Override
-  boolean closestIntersection(Ray ray);
+  IntersectionRecord closestIntersection(Ray ray, double limit);
 
   final class Factory {
 

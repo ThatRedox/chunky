@@ -53,6 +53,7 @@ import se.llbit.json.*;
 import se.llbit.log.Log;
 import se.llbit.math.*;
 import se.llbit.math.bvh.BVH;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.structures.Position2IntStructure;
 import se.llbit.nbt.CompoundTag;
 import se.llbit.nbt.ListTag;

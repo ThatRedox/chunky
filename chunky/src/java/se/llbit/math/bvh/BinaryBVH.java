@@ -18,17 +18,18 @@
 package se.llbit.math.bvh;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntStack;
 import org.apache.commons.math3.util.FastMath;
-import se.llbit.math.AABB;
-import se.llbit.math.Ray;
+import se.llbit.math.primitive.AABB;
+import se.llbit.math.rt.IntersectionRecord;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.primitive.Primitive;
+import se.llbit.util.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Stack;
 
-import static se.llbit.math.Ray.OFFSET;
+import static se.llbit.math.rt.Ray.OFFSET;
 
 /**
  * An abstract class for BinaryBVHs. This provides helper methods for packing a node based BVH into a more compact
@@ -205,17 +206,20 @@ public abstract class BinaryBVH implements BVH {
     }
 
     /**
-     * Find closest intersection between the ray and any object in the BVH. This uses a recursion-less algorithm
+     * Find the closest intersection between the ray and any object in the BVH. This uses a recursion-less algorithm
      * based on the compact BVH traversal algorithm presented in:
      * http://www.pbr-book.org/3ed-2018/Primitives_and_Intersection_Acceleration/Bounding_Volume_Hierarchies.html#Traversal
      *
      * @return {@code true} if there exists any intersection
      */
+    @Nullable
     @Override
-    public boolean closestIntersection(Ray ray) {
-        boolean hit = false;
+    public IntersectionRecord closestIntersection(Ray ray, double limit) {
+        IntersectionRecord record = null;
         int currentNode = 0;
-        IntStack nodesToVisit = new IntArrayList(depth/2);
+        // TODO: Tune this parameter
+        int[] nodesToVisit = new int[depth];
+        int nodesToVisitTop = 0;
 
         double rx = 1 / ray.d.x;
         double ry = 1 / ray.d.y;
@@ -226,13 +230,17 @@ public abstract class BinaryBVH implements BVH {
                 // Is leaf
                 int primIndex = -packed[currentNode];
                 for (Primitive primitive : packedPrimitives[primIndex]) {
-                    hit = primitive.intersect(ray) | hit;
+                    IntersectionRecord primitiveRecord = primitive.closestIntersection(ray, limit);
+                    if (primitiveRecord != null && (record == null || primitiveRecord.distance < limit)) {
+                        record = primitiveRecord;
+                        limit = primitiveRecord.distance;
+                    }
                 }
 
-                if (nodesToVisit.isEmpty()) break;
-                currentNode = nodesToVisit.popInt();
+                if (nodesToVisitTop == 0) break;
+                currentNode = nodesToVisit[nodesToVisitTop--];
             } else {
-                // Is branch, find closest node
+                // Is branch, find the closest node
                 int offset = currentNode+7;
                 double t1 = quickAabbIntersect(ray, Float.intBitsToFloat(packed[offset+1]), Float.intBitsToFloat(packed[offset+2]),
                         Float.intBitsToFloat(packed[offset+3]), Float.intBitsToFloat(packed[offset+4]),
@@ -244,26 +252,26 @@ public abstract class BinaryBVH implements BVH {
                         Float.intBitsToFloat(packed[offset+5]), Float.intBitsToFloat(packed[offset+6]),
                         rx, ry, rz);
 
-                if (t1 > ray.t | t1 == -1) {
-                    if (t2 > ray.t | t2 == -1) {
-                        if (nodesToVisit.isEmpty()) break;
-                        currentNode = nodesToVisit.popInt();
+                if (Double.isNaN(t1) | t1 > limit) {
+                    if (Double.isNaN(t2) | t2 > limit) {
+                      if (nodesToVisitTop == 0) break;
+                      currentNode = nodesToVisit[nodesToVisitTop--];
                     } else {
                         currentNode = packed[currentNode];
                     }
-                } else if (t2 > ray.t | t2 == -1) {
+                } else if (Double.isNaN(t2) | t2 > limit) {
                     currentNode += 7;
                 } else if (t1 < t2) {
-                    nodesToVisit.push(packed[currentNode]);
+                    nodesToVisit[nodesToVisitTop++] = packed[currentNode];
                     currentNode += 7;
                 } else {
-                    nodesToVisit.push(currentNode + 7);
+                    nodesToVisit[nodesToVisitTop++] = currentNode + 7;
                     currentNode = packed[currentNode];
                 }
             }
         }
 
-        return hit;
+        return record;
     }
 
     /**
@@ -283,7 +291,7 @@ public abstract class BinaryBVH implements BVH {
         double tmin = FastMath.max(FastMath.max(FastMath.min(tx1, tx2), FastMath.min(ty1, ty2)), FastMath.min(tz1, tz2));
         double tmax = FastMath.min(FastMath.min(FastMath.max(tx1, tx2), FastMath.max(ty1, ty2)), FastMath.max(tz1, tz2));
 
-        return (tmin <= tmax + OFFSET) & (tmax >= 0) ? tmin : -1;
+        return (tmin <= tmax + OFFSET) & (tmax >= 0) ? tmin : Double.NaN;
     }
 
     /**

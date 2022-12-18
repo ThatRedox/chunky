@@ -20,7 +20,7 @@ import it.unimi.dsi.fastutil.ints.IntIntMutablePair;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
 import org.apache.commons.math3.util.FastMath;
 import se.llbit.chunky.renderer.scene.Scene;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 
 import java.util.ArrayList;
 import java.util.function.BiConsumer;

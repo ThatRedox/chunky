@@ -3,7 +3,6 @@ package se.llbit.chunky.entity;
 import java.util.Collection;
 import java.util.LinkedList;
 
-import se.llbit.chunky.PersistentSettings;
 import se.llbit.chunky.model.Model;
 import se.llbit.chunky.resources.Texture;
 import se.llbit.chunky.world.material.TextureMaterial;
@@ -11,7 +10,7 @@ import se.llbit.json.Json;
 import se.llbit.json.JsonObject;
 import se.llbit.json.JsonValue;
 import se.llbit.math.Quad;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 import se.llbit.math.Transform;
 import se.llbit.math.Vector3;
 import se.llbit.math.Vector4;

@@ -245,4 +245,12 @@ public class Vector3 {
     object.add("z", z);
     return object;
   }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null) return false;
+    if (!(obj instanceof Vector3)) return false;
+    Vector3 other = (Vector3) obj;
+    return other.x == this.x & other.y == this.y & other.z == this.z;
+  }
 }

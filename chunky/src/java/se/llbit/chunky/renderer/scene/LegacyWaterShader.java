@@ -18,7 +18,7 @@ package se.llbit.chunky.renderer.scene;
 
 import se.llbit.chunky.model.WaterModel;
 import se.llbit.json.JsonObject;
-import se.llbit.math.Ray;
+import se.llbit.math.rt.Ray;
 
 public class LegacyWaterShader implements WaterShader {
   @Override
