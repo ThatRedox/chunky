@@ -16,9 +16,14 @@
  */
 package se.llbit.chunky.renderer;
 
+import se.llbit.chunky.renderer.filter.BlackmanHarrisPixelFilter;
+import se.llbit.chunky.renderer.filter.PixelFilter;
 import se.llbit.chunky.renderer.scene.Camera;
 import se.llbit.chunky.renderer.scene.RayTracer;
 import se.llbit.chunky.renderer.scene.Scene;
+import se.llbit.math.QuickMath;
+
+import java.util.Random;
 
 public class PathTracingRenderer extends TileBasedRenderer {
   protected final String id;
@@ -80,17 +85,19 @@ public class PathTracingRenderer extends TileBasedRenderer {
         double sb = 0;
 
         for (int k = 0; k < sppPerPass; k++) {
-          double ox = state.random.nextDouble();
-          double oy = state.random.nextDouble();
+          PixelFilter filter = BlackmanHarrisPixelFilter.DEFAULT;
+          double ox = filter.sampleX(state.random);
+          double oy = filter.sampleY(state.random);
+          double weight = filter.weight(ox, oy);
 
           cam.calcViewRay(state.ray, state.random,
               -halfWidth + (x + ox + cropX) * invHeight,
               -0.5 + (y + oy + cropY) * invHeight);
           scene.rayTrace(tracer, state);
 
-          sr += state.ray.color.x;
-          sg += state.ray.color.y;
-          sb += state.ray.color.z;
+          sr += state.ray.color.x * weight;
+          sg += state.ray.color.y * weight;
+          sb += state.ray.color.z * weight;
         }
 
         int offset = 3 * (y*width + x);
