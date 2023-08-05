@@ -694,47 +694,18 @@ public class Scene implements JsonSerializable, Refreshable {
    * @return {@code true} if the ray intersects a voxel
    */
   private boolean worldIntersection(Ray ray) {
-    Ray start = new Ray(ray);
-    start.setCurrentMaterial(ray.getPrevMaterial(), ray.getPrevData());
-    boolean hit = false;
-    Ray r = new Ray(start);
-    r.setCurrentMaterial(start.getPrevMaterial(), start.getPrevData());
+    Ray r = new Ray();
+    r.copy(ray);
+    r.setCurrentMaterial(ray.getPrevMaterial(), ray.getPrevData());
     if (worldOctree.enterBlock(this, r, palette) && r.distance < ray.t) {
       ray.t = r.distance;
       ray.setNormal(r.getNormal());
       ray.color.set(r.color);
       ray.setPrevMaterial(r.getPrevMaterial(), r.getPrevData());
       ray.setCurrentMaterial(r.getCurrentMaterial(), r.getCurrentData());
-      hit = true;
+      return true;
     }
-    if (start.getCurrentMaterial().isWater()) {
-      r = new Ray(start);
-      r.setCurrentMaterial(start.getPrevMaterial(), start.getPrevData());
-      // TODO
-      /*if(waterOctree.exitWater(this, r, palette) && r.distance < ray.t - Ray.EPSILON) {
-        ray.t = r.distance;
-        ray.setNormal(r.getNormal());
-        ray.color.set(r.color);
-        ray.setPrevMaterial(r.getPrevMaterial(), r.getPrevData());
-        ray.setCurrentMaterial(r.getCurrentMaterial(), r.getCurrentData());
-        hit = true;
-      } else if(ray.getPrevMaterial() == Air.INSTANCE) {
-        ray.setPrevMaterial(Water.INSTANCE, 1 << Water.FULL_BLOCK);
-      }*/
-    } else {
-      // TODO
-      /*r = new Ray(start);
-      r.setCurrentMaterial(start.getPrevMaterial(), start.getPrevData());
-      if (waterOctree.enterBlock(this, r, palette) && r.distance < ray.t) {
-        ray.t = r.distance;
-        ray.setNormal(r.getNormal());
-        ray.color.set(r.color);
-        ray.setPrevMaterial(r.getPrevMaterial(), r.getPrevData());
-        ray.setCurrentMaterial(r.getCurrentMaterial(), r.getCurrentData());
-        hit = true;
-      }*/
-    }
-    return hit;
+    return false;
   }
 
   public void updateOpacity(Ray ray) {
