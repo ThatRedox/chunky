@@ -548,10 +548,11 @@ public class Octree {
         }
 
         if (currentBlock.intersect(ray, scene)) {
-          if (prevBlock != currentBlock) {
-            if (watered && waterRay.distance < ray.distance) {
-              ray.copy(waterRay);
-            }
+          if (watered && waterRay.distance < ray.distance) {
+            ray.copy(waterRay);
+            return true;
+          }
+          if (!prevBlock.isSameMaterial(currentBlock)) {
             return true;
           }
 
@@ -567,7 +568,7 @@ public class Octree {
           }
 
           // Exit ray from this local block.
-          ray.setCurrentMaterial(Air.INSTANCE); // Current material is air.
+          ray.setCurrentMaterial(prevBlock, ray.getPrevData());
           ray.exitBlock(x, y, z);
           offsetX = -ray.o.x * invDx;
           offsetY = -ray.o.y * invDy;
@@ -633,131 +634,6 @@ public class Octree {
       ray.setNormal(nx, ny, nz);
 
       distance = tNear;
-    }
-  }
-
-  /**
-   * Advance the ray until it leaves the current water body.
-   *
-   * @return {@code false} if the ray doesn't hit anything
-   */
-  public boolean exitWater(Scene scene, Ray ray, BlockPalette palette) {
-    if (!isInside(ray.o) && !enterOctree(ray))
-      return false;
-
-    int depth = getDepth();
-    // Marching is done in a top-down fashion: at each step, the octree is descended from the root to find the leaf
-    // node the ray is in. Terminating the march is then decided based on the block type in that leaf node. Finally the
-    // ray is advanced to the boundary of the current leaf node and the next, ready for the next iteration.
-
-    IntIntMutablePair typeAndLevel = new IntIntMutablePair(0, 0);
-    while (true) {
-      // Add small offset past the intersection to avoid
-      // recursion to the same octree node!
-      int x = (int) QuickMath.floor(ray.o.x + ray.d.x * Ray.OFFSET);
-      int y = (int) QuickMath.floor(ray.o.y + ray.d.y * Ray.OFFSET);
-      int z = (int) QuickMath.floor(ray.o.z + ray.d.z * Ray.OFFSET);
-
-      int lx = x >>> depth;
-      int ly = y >>> depth;
-      int lz = z >>> depth;
-
-      if (lx != 0 || ly != 0 || lz != 0)
-        return false; // outside of octree!
-
-      // Descend the tree to find the current leaf node
-      implementation.getWithLevel(typeAndLevel, x, y, z);
-      int type = typeAndLevel.leftInt();
-      int level = typeAndLevel.rightInt();
-
-      lx = x >>> level;
-      ly = y >>> level;
-      lz = z >>> level;
-
-      // Test intersection
-      Block currentBlock = palette.get(type);
-      Material prevBlock = ray.getCurrentMaterial();
-
-      ray.setPrevMaterial(prevBlock, ray.getCurrentData());
-      ray.setCurrentMaterial(currentBlock);
-
-      if (!currentBlock.isWater()) {
-        if (currentBlock.localIntersect) {
-          if (!currentBlock.intersect(ray, scene)) {
-            ray.setCurrentMaterial(Air.INSTANCE);
-          }
-          return true;
-        } else if (currentBlock != Air.INSTANCE) {
-          TexturedBlockModel.getIntersectionColor(ray);
-          if (currentBlock.opaque) {
-            ray.color.w = 1;
-          }
-          return true;
-        } else {
-          return true;
-        }
-      }
-
-      if (!(currentBlock instanceof Water && ((Water) currentBlock).isFullBlock())) {
-        if (WaterModel.intersectTop(ray)) {
-          ray.setCurrentMaterial(Air.INSTANCE);
-          return true;
-        } else {
-          ray.exitBlock(x, y, z);
-          continue;
-        }
-      }
-
-      // No intersection, exit current octree leaf.
-      int nx = 0, ny = 0, nz = 0;
-      double tNear = Double.POSITIVE_INFINITY;
-
-      // Testing all six sides of the current leaf node and advancing to the closest intersection
-      double t = ((lx << level) - ray.o.x) / ray.d.x;
-      if (t > Ray.EPSILON) {
-        tNear = t;
-        nx = 1;
-        ny = nz = 0;
-      } else {
-        t = (((lx + 1) << level) - ray.o.x) / ray.d.x;
-        if (t < tNear && t > Ray.EPSILON) {
-          tNear = t;
-          nx = -1;
-          ny = nz = 0;
-        }
-      }
-
-      t = ((ly << level) - ray.o.y) / ray.d.y;
-      if (t < tNear && t > Ray.EPSILON) {
-        tNear = t;
-        ny = 1;
-        nx = nz = 0;
-      } else {
-        t = (((ly + 1) << level) - ray.o.y) / ray.d.y;
-        if (t < tNear && t > Ray.EPSILON) {
-          tNear = t;
-          ny = -1;
-          nx = nz = 0;
-        }
-      }
-
-      t = ((lz << level) - ray.o.z) / ray.d.z;
-      if (t < tNear && t > Ray.EPSILON) {
-        tNear = t;
-        nz = 1;
-        nx = ny = 0;
-      } else {
-        t = (((lz + 1) << level) - ray.o.z) / ray.d.z;
-        if (t < tNear && t > Ray.EPSILON) {
-          tNear = t;
-          nz = -1;
-          nx = ny = 0;
-        }
-      }
-
-      ray.o.scaleAdd(tNear, ray.d);
-      ray.setNormal(nx, ny, nz);
-      ray.distance += tNear;
     }
   }
 
