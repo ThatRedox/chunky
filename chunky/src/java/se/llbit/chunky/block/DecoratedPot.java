@@ -17,7 +17,7 @@ public class DecoratedPot extends AbstractModelBlock {
   private final String facing;
   private final String description;
 
-  public DecoratedPot(String facing, boolean waterlogged, String[] sherds) {
+  public DecoratedPot(String facing, Water waterlogged, String[] sherds) {
     super("decorated_pot", Texture.decoratedPotSide);
     this.waterlogged = waterlogged;
     this.facing = facing;

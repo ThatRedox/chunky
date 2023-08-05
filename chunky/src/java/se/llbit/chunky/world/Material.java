@@ -16,6 +16,7 @@
  */
 package se.llbit.chunky.world;
 
+import se.llbit.chunky.block.Water;
 import se.llbit.chunky.resources.Texture;
 import se.llbit.json.JsonObject;
 import se.llbit.json.JsonString;
@@ -87,7 +88,7 @@ public abstract class Material {
 
   public boolean refractive = false;
 
-  public boolean waterlogged = false;
+  public Water waterlogged = null;
 
   public Material(String name, Texture texture) {
     this.name = name;
@@ -132,7 +133,7 @@ public abstract class Material {
   }
 
   public boolean isWaterFilled() {
-    return waterlogged || isWater();
+    return waterlogged != null || isWater();
   }
 
   public boolean isSameMaterial(Material other) {

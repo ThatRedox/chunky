@@ -58,7 +58,7 @@ public class BlockSpec {
 
   private Block maybeWaterlogged(Block block) {
     if (tag.get("Properties").get("waterlogged").stringValue("").equals("true")) {
-      block.waterlogged = true;
+      block.waterlogged = Water.INSTANCE;
     }
     return block;
   }

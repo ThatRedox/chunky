@@ -396,16 +396,16 @@ public class BlockPalette {
       block.emittance = 1.0f;
     });
     materialProperties.put("minecraft:kelp", block -> {
-      block.waterlogged = true;
+      block.waterlogged = Water.INSTANCE;
     });
     materialProperties.put("minecraft:kelp_plant", block -> {
-      block.waterlogged = true;
+      block.waterlogged = Water.INSTANCE;
     });
     materialProperties.put("minecraft:seagrass", block -> {
-      block.waterlogged = true;
+      block.waterlogged = Water.INSTANCE;
     });
     materialProperties.put("minecraft:tall_seagrass", block -> {
-      block.waterlogged = true;
+      block.waterlogged = Water.INSTANCE;
     });
     materialProperties.put("minecraft:sea_pickle", block -> {
       if (block instanceof SeaPickle) {

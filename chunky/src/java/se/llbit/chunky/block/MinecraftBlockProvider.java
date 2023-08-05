@@ -3519,7 +3519,7 @@ public class MinecraftBlockProvider implements BlockProvider {
     }
     return new DecoratedPot(
       facing,
-      waterlogged,
+      waterlogged ? Water.INSTANCE : null,
       sherds
     );
   }

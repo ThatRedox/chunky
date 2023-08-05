@@ -33,7 +33,7 @@ import se.llbit.chunky.renderer.scene.biome.BiomeStructure;
 public class OctreeFileFormat {
 
   private static final int MIN_OCTREE_VERSION = 3;
-  private static final int OCTREE_VERSION = 7;
+  private static final int OCTREE_VERSION = 8;
 
   /**
    * In octree v3-v4, the top bit of the type field in a serialized octree node is reserved for
@@ -58,7 +58,9 @@ public class OctreeFileFormat {
     OctreeData data = new OctreeData();
     data.palette = BlockPalette.read(in);
     data.worldTree = Octree.load(octreeImpl, version < 5 ? convertDataNodes(data.palette, in) : in);
-    data.waterTree = Octree.load(octreeImpl, version < 5 ? convertDataNodes(data.palette, in) : in);
+    if (version <= 7) {
+      data.waterTree = Octree.load(octreeImpl, version < 5 ? convertDataNodes(data.palette, in) : in);
+    }
 
     if(version >= 7) {
       data.grassColors = loadBiomeStructure(in);

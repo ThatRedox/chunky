@@ -6,7 +6,7 @@ public class PointedDripstone extends SpriteBlock {
 
   public PointedDripstone(String thickness, String verticalDirection, boolean waterlogged) {
     super("pointed_dripstone", getTexture(thickness, verticalDirection));
-    this.waterlogged = waterlogged;
+    this.waterlogged = waterlogged ? Water.INSTANCE : null;
   }
 
   private static Texture getTexture(String thickness, String verticalDirection) {

@@ -854,7 +854,6 @@ public class Scene implements JsonSerializable, Refreshable {
       ChunkPosition[] chunkPositions = chunksToLoad.toArray(new ChunkPosition[0]);
 
       int[] cubeWorldBlocks = new int[16*16*16];
-      int[] cubeWaterBlocks = new int[16*16*16];
 
       ExecutorService executor = Executors.newSingleThreadExecutor();
       Future<?> nextChunkDataTask = executor.submit(() -> { //Initialise first chunk data for the for loop
@@ -941,7 +940,6 @@ public class Scene implements JsonSerializable, Refreshable {
         for(int yCube = yCubeMin; yCube < yCubeMax; ++yCube) {
           // Reset the cubes
           Arrays.fill(cubeWorldBlocks, 0);
-          Arrays.fill(cubeWaterBlocks, 0);
           for(int cy = 0; cy < 16; ++cy) { //Uses chunk min and max, rather than global - minor optimisation for pre1.13 worlds
             int y = yCube * 16 + cy;
             if(y < yMin || y >= yMax)
@@ -990,7 +988,7 @@ public class Scene implements JsonSerializable, Refreshable {
                       }
 
                       if(!block.isBlockWithEntity()) {
-                        if(block.waterlogged) {
+                        if(block.waterlogged != null) {
                           block = palette.water;
                           octNode = palette.waterId;
                         } else {
@@ -1001,71 +999,57 @@ public class Scene implements JsonSerializable, Refreshable {
                     }
                   }
 
-                  if(block.isWaterFilled()) {
-                    int waterNode = palette.waterId;
-                    if(y + 1 < yMax) {
-                      if(palette.get(chunkData.getBlockAt(cx, y + 1, cz)).isWaterFilled()) {
-                        waterNode = palette.getWaterId(0, 1 << Water.FULL_BLOCK);
-                      }
+                  if (block instanceof Water) {
+                    if (y + 1 < yMax && palette.get(chunkData.getBlockAt(cx, y + 1, cz)).isWaterFilled()) {
+                      octNode = palette.getWaterId(0, 1 << Water.FULL_BLOCK);
+                    } else if (!onEdge) {
+                      int level0 = 8 - ((Water) block).level;
+                      int corner0 = level0;
+                      int corner1 = level0;
+                      int corner2 = level0;
+                      int corner3 = level0;
+
+                      int level = Chunk.waterLevelAt(chunkData, palette, cx - 1, y, cz, level0);
+                      corner3 += level;
+                      corner0 += level;
+
+                      level = Chunk.waterLevelAt(chunkData, palette, cx - 1, y, cz + 1, level0);
+                      corner0 += level;
+
+                      level = Chunk.waterLevelAt(chunkData, palette, cx, y, cz + 1, level0);
+                      corner0 += level;
+                      corner1 += level;
+
+                      level = Chunk.waterLevelAt(chunkData, palette, cx + 1, y, cz + 1, level0);
+                      corner1 += level;
+
+                      level = Chunk.waterLevelAt(chunkData, palette, cx + 1, y, cz, level0);
+                      corner1 += level;
+                      corner2 += level;
+
+                      level = Chunk.waterLevelAt(chunkData, palette, cx + 1, y, cz - 1, level0);
+                      corner2 += level;
+
+                      level = Chunk.waterLevelAt(chunkData, palette, cx, y, cz - 1, level0);
+                      corner2 += level;
+                      corner3 += level;
+
+                      level = Chunk.waterLevelAt(chunkData, palette, cx - 1, y, cz - 1, level0);
+                      corner3 += level;
+
+                      corner0 = Math.min(7, 8 - (corner0 / 4));
+                      corner1 = Math.min(7, 8 - (corner1 / 4));
+                      corner2 = Math.min(7, 8 - (corner2 / 4));
+                      corner3 = Math.min(7, 8 - (corner3 / 4));
+                      octNode = palette.getWaterId(((Water) block).level, (corner0 << Water.CORNER_0)
+                                      | (corner1 << Water.CORNER_1)
+                                      | (corner2 << Water.CORNER_2)
+                                      | (corner3 << Water.CORNER_3));
+                    } else {
+                      octNode = palette.getWaterId(((Water) block).level, 0);
                     }
-                    if(block.isWater()) {
-                      // Move plain water blocks to the water octree.
-                      octNode = palette.airId;
-
-                      if(!onEdge) {
-                        // Perform water computation now for water blocks that are not on th edge of the chunk
-                        // Test if the block has not already be marked as full
-                        if(((Water) palette.get(waterNode)).data == 0) {
-                          int level0 = 8 - ((Water) block).level;
-                          int corner0 = level0;
-                          int corner1 = level0;
-                          int corner2 = level0;
-                          int corner3 = level0;
-
-                          int level = Chunk.waterLevelAt(chunkData, palette, cx - 1, y, cz, level0);
-                          corner3 += level;
-                          corner0 += level;
-
-                          level = Chunk.waterLevelAt(chunkData, palette, cx - 1, y, cz + 1, level0);
-                          corner0 += level;
-
-                          level = Chunk.waterLevelAt(chunkData, palette, cx, y, cz + 1, level0);
-                          corner0 += level;
-                          corner1 += level;
-
-                          level = Chunk.waterLevelAt(chunkData, palette, cx + 1, y, cz + 1, level0);
-                          corner1 += level;
-
-                          level = Chunk.waterLevelAt(chunkData, palette, cx + 1, y, cz, level0);
-                          corner1 += level;
-                          corner2 += level;
-
-                          level = Chunk.waterLevelAt(chunkData, palette, cx + 1, y, cz - 1, level0);
-                          corner2 += level;
-
-                          level = Chunk.waterLevelAt(chunkData, palette, cx, y, cz - 1, level0);
-                          corner2 += level;
-                          corner3 += level;
-
-                          level = Chunk.waterLevelAt(chunkData, palette, cx - 1, y, cz - 1, level0);
-                          corner3 += level;
-
-                          corner0 = Math.min(7, 8 - (corner0 / 4));
-                          corner1 = Math.min(7, 8 - (corner1 / 4));
-                          corner2 = Math.min(7, 8 - (corner2 / 4));
-                          corner3 = Math.min(7, 8 - (corner3 / 4));
-                          waterNode = palette.getWaterId(((Water) block).level, (corner0 << Water.CORNER_0)
-                                          | (corner1 << Water.CORNER_1)
-                                          | (corner2 << Water.CORNER_2)
-                                          | (corner3 << Water.CORNER_3));
-                        }
-                      } else {
-                        // Water computation for water blocks on the edge of a chunk is done by the OctreeFinalizer but we need the water level information
-                        waterNode = palette.getWaterId(((Water) block).level, 0);
-                      }
-                    }
-                    cubeWaterBlocks[cubeIndex] = waterNode;
-                  } else if(y + 1 < yMax && block instanceof Lava) {
+                  }
+                  if(y + 1 < yMax && block instanceof Lava) {
                     if(palette.get(chunkData.getBlockAt(cx, y + 1, cz)) instanceof Lava) {
                       octNode = palette.getLavaId(0, 1 << Water.FULL_BLOCK);
                     } else if(!onEdge) {

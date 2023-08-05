@@ -172,6 +172,29 @@ public class Ray {
   }
 
   /**
+   * Copy the whole state from another ray.
+   */
+  public void copy(Ray other) {
+    d.set(other.d);
+    o.set(other.o);
+    n.set(other.n);
+    geomN.set(other.geomN);
+    distance = other.distance;
+    color.set(other.color);
+    emittance.set(other.emittance);
+    prevMaterial = other.prevMaterial;
+    currentMaterial = other.currentMaterial;
+    prevData = other.prevData;
+    currentData = other.currentData;
+    depth = other.depth;
+    t = other.t;
+    tNext = other.tNext;
+    u = other.u;
+    v = other.v;
+    specular = other.specular;
+  }
+
+  /**
    * Initialize a ray with origin and direction.
    *
    * @param o origin

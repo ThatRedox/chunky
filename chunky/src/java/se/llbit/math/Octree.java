@@ -496,6 +496,7 @@ public class Octree {
     double offsetZ = -ray.o.z * invDz;
 
     IntIntMutablePair typeAndLevel = new IntIntMutablePair(0, 0);
+    Ray waterRay = new Ray();
 
     // Marching is done in a top-down fashion: at each step, the octree is descended from the root to find the leaf
     // node the ray is in. Terminating the march is then decided based on the block type in that leaf node. Finally the
@@ -538,9 +539,21 @@ public class Octree {
         ray.o.scaleAdd(distance, ray.d);
         ray.distance += distance;
         distance = 0;
+
+        boolean watered = false;
+        if (currentBlock.waterlogged != null && !prevBlock.isWater()) {
+          waterRay.copy(ray);
+          waterRay.setCurrentMaterial(currentBlock.waterlogged);
+          watered = currentBlock.waterlogged.intersect(waterRay, scene);
+        }
+
         if (currentBlock.intersect(ray, scene)) {
-          if (prevBlock != currentBlock)
+          if (prevBlock != currentBlock) {
+            if (watered && waterRay.distance < ray.distance) {
+              ray.copy(waterRay);
+            }
             return true;
+          }
 
           ray.o.scaleAdd(Ray.OFFSET, ray.d);
           offsetX = -ray.o.x * invDx;
@@ -548,6 +561,11 @@ public class Octree {
           offsetZ = -ray.o.z * invDz;
           continue;
         } else {
+          if (watered) {
+            ray.copy(waterRay);
+            return true;
+          }
+
           // Exit ray from this local block.
           ray.setCurrentMaterial(Air.INSTANCE); // Current material is air.
           ray.exitBlock(x, y, z);
@@ -556,7 +574,7 @@ public class Octree {
           offsetZ = -ray.o.z * invDz;
           continue;
         }
-      } else if (!currentBlock.isSameMaterial(prevBlock) && currentBlock != Air.INSTANCE) {
+      } else if (!currentBlock.isSameMaterial(prevBlock)) {
         // Origin and distance of ray need to be updated
         ray.o.scaleAdd(distance, ray.d);
         ray.distance += distance;
