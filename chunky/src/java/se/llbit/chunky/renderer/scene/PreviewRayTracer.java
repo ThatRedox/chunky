@@ -121,7 +121,7 @@ public class PreviewRayTracer implements RayTracer {
     if (ray.d.y < 0) {
       if (t > 0 && t < ray.t) {
         ray.t = t;
-        Water.INSTANCE.getColor(ray);
+        Water.INSTANCE.texture.getAvgColorLinear(ray.color);
         ray.setNormal(0, 1, 0);
         ray.setCurrentMaterial(scene.getPalette().water);
         return true;
@@ -130,7 +130,7 @@ public class PreviewRayTracer implements RayTracer {
     if (ray.d.y > 0) {
       if (t > 0 && t < ray.t) {
         ray.t = t;
-        Water.INSTANCE.getColor(ray);
+        Water.INSTANCE.texture.getAvgColorLinear(ray.color);
         ray.setNormal(0, -1, 0);
         ray.setCurrentMaterial(Air.INSTANCE);
         return true;
