@@ -83,6 +83,12 @@ public class PathTracingRenderer extends TileBasedRenderer {
         double sb = 0;
 
         for (int k = 0; k < sppPerPass; k++) {
+          if (x == 1225 && y == 1168) {
+            state.random.setSeed(1293704254156201562L);
+          } else {
+            break;
+          }
+
           double ox = state.random.nextDouble();
           double oy = state.random.nextDouble();
 
