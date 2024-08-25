@@ -510,6 +510,7 @@ public class PathTracer implements RayTracer {
       if (Math.abs(emitterRay.distance - distance) < Ray.OFFSET) {
         double e = Math.abs(emitterRay.d.dot(emitterRay.getNormal()));
         e /= Math.max(distance * distance, 1);
+        // TODO: Divide by sampling weight
         e *= pos.block.surfaceArea(face);
         e *= emitterRay.getCurrentMaterial().emittance;
         e *= scene.emitterIntensity;

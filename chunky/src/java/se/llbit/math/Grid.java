@@ -78,6 +78,7 @@ public class Grid {
   private int[] constructedGrid;
   // This way of storing the data is more difficult to manipulate but more
   // memory efficient by virtue of only having 2 flat arrays
+  private AliasTable[] aliasTables;
 
   // Only used during construction
   private int minX, maxX, minY, maxY, minZ, maxZ;
@@ -158,23 +159,38 @@ public class Grid {
 
     positionIndexes = new int[numberOfPositionIndex];
     constructedGrid = new int[sizeX * sizeY * sizeZ * 2];
+    aliasTables = new AliasTable[sizeX * sizeY * sizeZ];
     int constructedGridCurrentIndex = 0;
 
     for(int i = 0; i < gridDuringConstruction.length; ++i) {
-      if(gridDuringConstruction[i] == null) {
+      Cell cell = gridDuringConstruction[i];
+      if(cell == null) {
         constructedGrid[2*i] = constructedGridCurrentIndex;
         constructedGrid[2*i+1] = 0;
         continue;
       }
-
-      int numberOfIndexes = gridDuringConstruction[i].indexes.size();
+      int numberOfIndexes = cell.indexes.size();
       for(int j = 0; j < numberOfIndexes; ++j) {
-        positionIndexes[constructedGridCurrentIndex+j] = gridDuringConstruction[i].indexes.get(j);
+        positionIndexes[constructedGridCurrentIndex+j] = cell.indexes.get(j);
       }
       constructedGrid[2*i] = constructedGridCurrentIndex;
       constructedGrid[2*i+1] = numberOfIndexes;
       constructedGridCurrentIndex += numberOfIndexes;
+
+      aliasTables[i] = buildAliasTable(constructedGridCurrentIndex, numberOfIndexes);
     }
+  }
+
+  private AliasTable buildAliasTable(int start, int length) {
+    double[] weights = new double[length];
+    for (int i = 0; i < weights.length; i++) {
+      int index = positionIndexes[start + i];
+      Block block = emitterPositions.get(index).block;
+      for (int face = 0; face < block.faceCount(); face++) {
+        weights[i] += block.surfaceArea(face);
+      }
+    }
+    return new AliasTable(weights);
   }
 
   /**
@@ -191,11 +207,14 @@ public class Grid {
 
     int index = cellIndex(gridX, gridY, gridZ);
 
+//    AliasTable at = aliasTables[index];
     int start = constructedGrid[2*index];
     int size = constructedGrid[2*index+1];
 
     if(size == 0)
       return null;
+
+//    int randomIndex = at.sample(random);
     int randomIndex = random.nextInt(size);
     int emitterIndex = positionIndexes[start+randomIndex];
     return emitterPositions.get(emitterIndex);
@@ -346,6 +365,14 @@ public class Grid {
     grid.positionIndexes = new int[positionIndexesList.size()];
     for(int i = 0; i < positionIndexesList.size(); ++i)
       grid.positionIndexes[i] = positionIndexesList.get(i);
+
+    grid.aliasTables = new AliasTable[cellCount];
+    for (int i = 0; i < cellCount; i++) {
+      grid.aliasTables[i] = grid.buildAliasTable(
+        grid.constructedGrid[i*2],
+        grid.constructedGrid[i*2+1]
+      );
+    }
 
     return grid;
   }
